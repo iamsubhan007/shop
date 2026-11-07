@@ -8,32 +8,14 @@ import Footer from '@/components/footer';
 import ImageCarousel from '@/components/ImageCarousel';
 import FoodCard from '@/components/menu/FoodCard';
 import ProductModal from '@/components/menu/ProductModal';
-import { initialProducts, initialCategories } from '@/lib/data/initialData';
+import { useSite } from '@/context/SiteContext';
 
 export default function MenuPage() {
   const [showChatMsg, setShowChatMsg] = useState(true);
-  const [products, setProducts] = useState(initialProducts);
+  const { products, loading: siteLoading, error: siteError } = useSite();
   const [selectedGenre, setSelectedGenre] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
-
-  // Fetch live products from Supabase
-  useEffect(() => {
-    async function loadProducts() {
-      try {
-        const { supabase, isSupabaseConfigured } = await import('@/lib/supabase/client');
-        if (isSupabaseConfigured()) {
-          const { data: dbProducts } = await supabase.from('products').select('*');
-          if (dbProducts && dbProducts.length > 0) {
-            setProducts(dbProducts);
-          }
-        }
-      } catch (e) {
-        console.warn('Using fallback menu items:', e);
-      }
-    }
-    loadProducts();
-  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {

@@ -1,87 +1,40 @@
 import { NextResponse } from 'next/server';
-import { getFallbackOrder, updateFallbackOrderStatus } from '@/lib/orderStore';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { and, asc, eq, or } from 'drizzle-orm';
+import { db, schema } from '@/db';
+import { getCustomer, getStaff } from '@/lib/server/auth';
 
+export const dynamic = 'force-dynamic';
+
+// Order details for tracking. Allowed for: the owning customer, staff, or the holder of the secret tracking token.
 export async function GET(request, { params }) {
-  try {
-    const { id } = await params;
-    const adminSupabase = createAdminClient();
+  const { id } = await params;
+  const token = new URL(request.url).searchParams.get('t');
+  const isUuid = /^[0-9a-f-]{36}$/i.test(id);
+  const [order] = await db
+    .select()
+    .from(schema.orders)
+    .where(isUuid ? or(eq(schema.orders.id, id), eq(schema.orders.orderNumber, id)) : eq(schema.orders.orderNumber, id));
+  if (!order) return NextResponse.json({ error: 'Order not found.' }, { status: 404 });
 
-    if (adminSupabase) {
-      const { data, error } = await adminSupabase
-        .from('orders')
-        .select(`
-          *,
-          items:order_items(*),
-          payments:payment_submissions(*)
-        `)
-        .or(`id.eq.${id},order_number.eq.${id}`)
-        .single();
+  const customer = await getCustomer();
+  const staff = await getStaff();
+  const allowed = staff || (customer && order.userId === customer.id) || (token && order.trackingToken === token);
+  if (!allowed) return NextResponse.json({ error: 'Order not found.' }, { status: 404 }); // don't reveal existence
 
-      if (!error && data) {
-        return NextResponse.json({ order: data });
-      }
-    }
-
-    const order = getFallbackOrder(id);
-    if (!order) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-    }
-
-    return NextResponse.json({ order });
-  } catch (err) {
-    console.error('Error fetching order details:', err);
-    return NextResponse.json({ error: 'Server error retrieving order' }, { status: 500 });
-  }
-}
-
-export async function PATCH(request, { params }) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
-    const { status, paymentStatus, paymentReference, paymentProofUrl, adminNotes } = body;
-
-    const updates = {};
-    if (status) updates.status = status;
-    if (paymentStatus) updates.payment_status = paymentStatus;
-    if (paymentReference) updates.payment_reference = paymentReference;
-    if (paymentProofUrl) updates.payment_proof_url = paymentProofUrl;
-
-    const adminSupabase = createAdminClient();
-    if (adminSupabase) {
-      const { data, error } = await adminSupabase
-        .from('orders')
-        .update(updates)
-        .or(`id.eq.${id},order_number.eq.${id}`)
-        .select()
-        .single();
-
-      if (!error && data) {
-        // If payment submission exists, update it too
-        if (paymentStatus) {
-          await adminSupabase
-            .from('payment_submissions')
-            .update({
-              status: paymentStatus,
-              admin_notes: adminNotes || null,
-              verified_at: paymentStatus === 'verified' ? new Date().toISOString() : null,
-            })
-            .eq('order_id', data.id);
-        }
-
-        return NextResponse.json({ success: true, order: data });
-      }
-    }
-
-    // Fallback store update
-    const updated = updateFallbackOrderStatus(id, updates);
-    if (!updated) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-    }
-
-    return NextResponse.json({ success: true, order: updated });
-  } catch (err) {
-    console.error('Error updating order:', err);
-    return NextResponse.json({ error: 'Failed to update order status' }, { status: 500 });
-  }
+  const items = await db.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, order.id));
+  const history = await db.select().from(schema.orderStatusHistory).where(eq(schema.orderStatusHistory.orderId, order.id)).orderBy(asc(schema.orderStatusHistory.createdAt));
+  const { trackingToken, idempotencyKey, ...safe } = order;
+  return NextResponse.json({
+    order: {
+      ...safe,
+      subtotal: Number(order.subtotal),
+      discountAmount: Number(order.discountAmount),
+      deliveryFee: Number(order.deliveryFee),
+      totalAmount: Number(order.totalAmount),
+      hasProof: !!order.paymentProofUrl,
+      paymentProofUrl: staff || (customer && order.userId === customer.id) ? order.paymentProofUrl : null,
+      items: items.map((i) => ({ id: i.id, title: i.itemTitle, quantity: i.quantity, unitPrice: Number(i.unitPrice), subtotal: Number(i.subtotalPrice), notes: i.notes, productId: i.productId, dealId: i.dealId })),
+      history: history.map((h) => ({ from: h.fromStatus, to: h.toStatus, at: h.createdAt, note: staff ? h.note : null })),
+    },
+  });
 }

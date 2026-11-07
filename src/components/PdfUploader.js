@@ -43,7 +43,7 @@ export default function PdfUploader({ onUploadSuccess, backendUrl, loading, setL
   return (
     <div className="bg-gray-50 p-6 rounded-lg shadow-sm mb-6 border border-gray-200">
       <h2 className="text-xl font-semibold text-gray-700 mb-4">Upload Restaurant Documents (PDFs)</h2>
-      <p className="text-gray-600 mb-4">Please upload your restaurant's menu, FAQs, policies, etc., in PDF format to train the chatbot.</p>
+      <p className="text-gray-600 mb-4">Please upload your restaurant&apos;s menu, FAQs, policies, etc., in PDF format to train the chatbot.</p>
       <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
         <input
           type="file"

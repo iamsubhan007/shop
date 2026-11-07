@@ -20,40 +20,17 @@ import ImageCarousel from '@/components/ImageCarousel';
 import FoodCard from '@/components/menu/FoodCard';
 import ProductModal from '@/components/menu/ProductModal';
 import DealCard from '@/components/deals/DealCard';
-import { initialProducts, initialDeals, initialShopSettings } from '@/lib/data/initialData';
+import { useSite } from '@/context/SiteContext';
 import { useWishlist } from '@/context/WishlistContext';
 
 export default function Homepage() {
-  const [products, setProducts] = useState(initialProducts);
-  const [deals, setDeals] = useState(initialDeals);
+  const { products, deals, settings, loading: siteLoading, error: siteError } = useSite();
   const [showChatMsg, setShowChatMsg] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('All');
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   const { wishlist } = useWishlist();
-
-  // Fetch live products and deals from Supabase if table exists
-  useEffect(() => {
-    async function loadLiveData() {
-      try {
-        const { supabase, isSupabaseConfigured } = await import('@/lib/supabase/client');
-        if (isSupabaseConfigured()) {
-          const { data: dbProducts } = await supabase.from('products').select('*');
-          if (dbProducts && dbProducts.length > 0) {
-            setProducts(dbProducts);
-          }
-          const { data: dbDeals } = await supabase.from('deals').select('*');
-          if (dbDeals && dbDeals.length > 0) {
-            setDeals(dbDeals);
-          }
-        }
-      } catch (e) {
-        console.warn('Using initial product catalog fallback:', e);
-      }
-    }
-    loadLiveData();
-  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -112,10 +89,10 @@ export default function Homepage() {
 
           <div className="flex items-center gap-4 text-[11px] text-zinc-400">
             <span className="flex items-center gap-1 text-red-400">
-              <Bike size={13} /> 3 km Delivery Zone
+              <Bike size={13} /> {settings ? `${settings.delivery.radius_m} m Delivery Zone` : 'Delivery Zone'}
             </span>
             <span className="hidden sm:flex items-center gap-1">
-              <Clock size={13} /> {initialShopSettings.operating_hours}
+              <Clock size={13} /> {settings?.shop.hours}
             </span>
             <span className="text-emerald-400 font-semibold">
               Free Delivery &gt; Rs. 2500

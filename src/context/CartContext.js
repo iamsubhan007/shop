@@ -1,11 +1,13 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { initialShopSettings } from '@/lib/data/initialData';
+import { useSite } from '@/context/SiteContext';
 
 const CartContext = createContext(null);
+const CART_KEY = 'hbt_cart_v2'; // v2: items now reference database ids
 
 export function CartProvider({ children }) {
+  const { settings } = useSite();
   const [items, setItems] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [orderType, setOrderType] = useState('delivery'); // 'delivery' | 'pickup'
@@ -14,7 +16,7 @@ export function CartProvider({ children }) {
   // Load from localStorage on mount
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('hbt_cart');
+      const stored = localStorage.getItem(CART_KEY);
       if (stored) {
         setItems(JSON.parse(stored));
       }
@@ -34,7 +36,7 @@ export function CartProvider({ children }) {
   // Save to localStorage whenever items change
   useEffect(() => {
     try {
-      localStorage.setItem('hbt_cart', JSON.stringify(items));
+      localStorage.setItem(CART_KEY, JSON.stringify(items));
     } catch (e) {
       console.warn('Failed to save cart:', e);
     }
@@ -91,7 +93,7 @@ export function CartProvider({ children }) {
   const clearCart = () => {
     setItems([]);
     try {
-      localStorage.removeItem('hbt_cart');
+      localStorage.removeItem(CART_KEY);
     } catch {}
   };
 
@@ -113,9 +115,10 @@ export function CartProvider({ children }) {
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Delivery fee logic: free if pickup, or if subtotal >= free threshold (Rs. 2500)
-  const isFreeDelivery = subtotal >= initialShopSettings.free_delivery_threshold_rs;
-  const deliveryFee = orderType === 'pickup' ? 0 : isFreeDelivery ? 0 : initialShopSettings.delivery_fee_rs;
+  // Display-only estimate; the server recomputes the real fee at checkout.
+  const feeCfg = settings?.delivery || { fee: 0, free_over: 0 };
+  const isFreeDelivery = Number(feeCfg.free_over) > 0 && subtotal >= Number(feeCfg.free_over);
+  const deliveryFee = orderType === 'pickup' || !items.length ? 0 : isFreeDelivery ? 0 : Number(feeCfg.fee) || 0;
   const total = subtotal + deliveryFee;
 
   return (

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, Bike, Store, Sparkles } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-import { initialShopSettings } from '@/lib/data/initialData';
+import { useSite } from '@/context/SiteContext';
 
 export default function CartDrawer() {
   const router = useRouter();
@@ -25,11 +25,12 @@ export default function CartDrawer() {
     isFreeDelivery,
   } = useCart();
 
-  if (!isCartOpen) return null;
-
-  const freeDeliveryThreshold = initialShopSettings.free_delivery_threshold_rs;
+  const { settings } = useSite();
+  const freeDeliveryThreshold = Number(settings?.delivery?.free_over) || 0;
   const amountNeededForFreeDelivery = Math.max(0, freeDeliveryThreshold - subtotal);
-  const freeDeliveryProgress = Math.min(100, Math.round((subtotal / freeDeliveryThreshold) * 100));
+  const freeDeliveryProgress = freeDeliveryThreshold > 0 ? Math.min(100, Math.round((subtotal / freeDeliveryThreshold) * 100)) : 0;
+
+  if (!isCartOpen) return null;
 
   const handleCheckoutClick = () => {
     closeCart();
@@ -92,7 +93,7 @@ export default function CartDrawer() {
                 }`}
               >
                 <Bike size={14} />
-                Delivery (3 km)
+                Delivery
               </button>
               <button
                 type="button"
@@ -109,7 +110,7 @@ export default function CartDrawer() {
             </div>
 
             {/* Free delivery indicator for delivery orders */}
-            {orderType === 'delivery' && (
+            {orderType === 'delivery' && freeDeliveryThreshold > 0 && (
               <div className="mt-2.5">
                 <div className="flex items-center justify-between text-[11px] mb-1">
                   {isFreeDelivery ? (

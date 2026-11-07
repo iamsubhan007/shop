@@ -1,8 +1,9 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import CartDrawer from "@/components/cart/CartDrawer";
+import ChromeGate from "@/components/ChromeGate";
+import SupportButton from "@/components/SupportButton";
 import { AuthProvider } from "@/context/AuthContext";
+import { SiteProvider } from "@/context/SiteContext";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 
@@ -28,17 +29,20 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground min-h-screen flex flex-col selection:bg-red-600 selection:text-white`}
       >
+        <SiteProvider>
         <AuthProvider>
           <WishlistProvider>
             <CartProvider>
-              <Navbar />
+              <ChromeGate />
               <main className="flex-1">
                 {children}
               </main>
-              <CartDrawer />
+              <ChromeGate drawer />
+              <SupportButton />
             </CartProvider>
           </WishlistProvider>
         </AuthProvider>
+        </SiteProvider>
       </body>
     </html>
   );

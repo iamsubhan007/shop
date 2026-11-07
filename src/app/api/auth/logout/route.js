@@ -1,14 +1,8 @@
 import { NextResponse } from 'next/server';
-import { expireAdminOtp } from '@/lib/otpStore';
+import { COOKIE_CUSTOMER, COOKIE_STAFF, destroySession } from '@/lib/server/auth';
 
 export async function POST(request) {
-  try {
-    const { email } = await request.json();
-    if (email) {
-      expireAdminOtp(email);
-    }
-    return NextResponse.json({ success: true, message: 'Admin OTP session expired' });
-  } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
+  const { scope } = await request.json().catch(() => ({}));
+  await destroySession(scope === 'staff' ? COOKIE_STAFF : COOKIE_CUSTOMER);
+  return NextResponse.json({ success: true });
 }

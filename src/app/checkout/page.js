@@ -1,585 +1,276 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  ArrowLeft,
-  Bike,
-  Store,
-  CreditCard,
-  Building2,
-  Copy,
-  Check,
-  Upload,
-  AlertCircle,
-  Loader2,
-  ShieldCheck,
-  ShoppingBag,
-} from 'lucide-react';
+import { ArrowLeft, Bike, Store, Copy, Check, Upload, AlertCircle, Loader2, ShoppingBag, Banknote, Wallet, Landmark } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
-import { initialBankDetails, initialShopSettings } from '@/lib/data/initialData';
+import { useSite } from '@/context/SiteContext';
 import LocationRadiusChecker from '@/components/delivery/LocationRadiusChecker';
+import { PAYMENT_LABELS, PAYMENT_METHODS } from '@/lib/orderStatus';
+
+const ICONS = { bank_transfer: Landmark, jazzcash: Wallet, easypaisa: Wallet, cod: Banknote };
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, deliveryFee, total, orderType, setOrderType, customerLocation, clearCart } = useCart();
-  const { user, profile } = useAuth();
+  const { user, loading: authLoading, profileComplete } = useAuth();
+  const { settings } = useSite();
 
-  // Form states
-  const [customerName, setCustomerName] = useState(profile?.full_name || '');
-  const [customerPhone, setCustomerPhone] = useState(profile?.phone || '');
-  const [customerEmail, setCustomerEmail] = useState(user?.email || '');
-  const [specialInstructions, setSpecialInstructions] = useState('');
-
-  // Payment states
-  const [paymentMethod, setPaymentMethod] = useState('bank_transfer'); // 'bank_transfer' | 'easypaisa' | 'jazzcash'
-  const [paymentReference, setPaymentReference] = useState('');
-  const [senderAccount, setSenderAccount] = useState('');
-  const [paymentProofUrl, setPaymentProofUrl] = useState('');
-  const [copiedField, setCopiedField] = useState(null);
-  const [bankDetails, setBankDetails] = useState(initialBankDetails);
+  const [instructions, setInstructions] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [reference, setReference] = useState('');
+  const [proofFile, setProofFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [couponInput, setCouponInput] = useState('');
+  const [coupon, setCoupon] = useState(null); // { code, discount }
+  const [couponMsg, setCouponMsg] = useState('');
+  const [copied, setCopied] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const idemKey = useRef(null);
 
   useEffect(() => {
-    async function loadSettings() {
-      try {
-        const res = await fetch('/api/settings');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.bankSettings) {
-            setBankDetails(data.bankSettings);
-          }
-        }
-      } catch (e) {
-        console.warn('Using initial bank details fallback:', e);
-      }
-    }
-    loadSettings();
-  }, []);
+    if (authLoading) return;
+    if (!user || !profileComplete) router.replace('/auth?next=/checkout');
+  }, [authLoading, user, profileComplete, router]);
 
-  // Status
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState('');
+  useEffect(() => {
+    if (!user) return;
+    fetch('/api/settings?payment=1', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((d) => setInstructions(d.paymentInstructions || null))
+      .catch(() => {});
+  }, [user]);
 
-  const copyToClipboard = (text, fieldName) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(fieldName);
-    setTimeout(() => setCopiedField(null), 2000);
+  // Keep chosen order type valid against shop settings
+  useEffect(() => {
+    if (!settings) return;
+    if (orderType === 'delivery' && !settings.delivery.enabled && settings.pickup.enabled) setOrderType('pickup');
+  }, [settings, orderType, setOrderType]);
+
+  // Only offer methods allowed for this order type AND configured by the owner
+  const available = settings
+    ? PAYMENT_METHODS[orderType].filter((m) => (m === 'cod' ? true : settings.paymentMethods[m]))
+    : [];
+  useEffect(() => {
+    if (!available.includes(paymentMethod)) setPaymentMethod(available[0] || '');
+  }, [orderType, settings]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const copy = (text, key) => {
+    navigator.clipboard?.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(''), 1500);
   };
 
-  const handlePlaceOrder = async (e) => {
+  const onFile = async (file) => {
+    if (!file) return;
+    setUploading(true);
+    setError('');
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch('/api/upload/proof', { method: 'POST', body: fd });
+    const j = await res.json().catch(() => ({}));
+    setUploading(false);
+    if (!res.ok) return setError(j.error || 'Upload failed.');
+    setProofFile(j.file);
+  };
+
+  const applyCoupon = async () => {
+    setCouponMsg('');
+    const res = await fetch('/api/coupons/validate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: couponInput, subtotal }) });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) { setCoupon(null); return setCouponMsg(j.error || 'Invalid coupon.'); }
+    setCoupon(j);
+  };
+  // Re-check when the cart changes so the preview never shows a stale discount
+  useEffect(() => { if (coupon) { setCoupon(null); setCouponMsg('Cart changed — please apply your coupon again.'); } }, [subtotal]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const place = async (e) => {
     e.preventDefault();
-    setFormError('');
-
-    if (!customerName.trim() || !customerPhone.trim()) {
-      setFormError('Please enter your full name and mobile phone number.');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-
-    if (items.length === 0) {
-      setFormError('Your cart is empty. Please add items from our menu.');
-      return;
-    }
-
-    // Delivery validation
+    setError('');
+    if (!items.length) return setError('Your cart is empty.');
     if (orderType === 'delivery') {
-      if (!customerLocation || !customerLocation.lat || !customerLocation.lng) {
-        setFormError('Please click "Detect My Location" below to verify you are within our 3 km delivery zone.');
-        return;
-      }
-
-      if (!customerLocation.isEligible) {
-        setFormError('Your detected location is outside our 3 km delivery radius. Please switch your order to Pickup.');
-        return;
-      }
-
-      if (!customerLocation.address || customerLocation.address.trim().length < 5) {
-        setFormError('Please provide your complete street address and house/flat number for delivery.');
-        return;
-      }
+      if (!customerLocation?.lat) return setError('Please set your delivery location on the map.');
+      if (!customerLocation.isEligible) return setError('Your location is outside our delivery area. Please choose pickup.');
+      if ((customerLocation.address || '').trim().length < 5) return setError('Please enter your full delivery address.');
     }
-
-    // Payment verification requirement
-    if (!paymentReference.trim()) {
-      setFormError('Please enter your Transaction Reference ID (TRX ID) from your bank/wallet transfer.');
-      return;
-    }
+    if (!paymentMethod) return setError('Please choose a payment method.');
 
     setSubmitting(true);
-
+    idemKey.current ||= crypto.randomUUID();
     try {
-      const payload = {
-        customerName,
-        customerPhone,
-        customerEmail,
-        orderType,
-        deliveryAddress: customerLocation?.address || '',
-        deliveryCoordinates: customerLocation ? { lat: customerLocation.lat, lng: customerLocation.lng } : null,
-        items,
-        paymentMethod,
-        paymentReference,
-        paymentProofUrl,
-        specialInstructions,
-        userId: user?.id || null,
-      };
-
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          orderType,
+          customerName: user.fullName,
+          customerPhone: user.phone,
+          deliveryAddress: orderType === 'delivery' ? customerLocation.address : undefined,
+          deliveryLat: orderType === 'delivery' ? customerLocation.lat : undefined,
+          deliveryLng: orderType === 'delivery' ? customerLocation.lng : undefined,
+          paymentMethod,
+          paymentReference: reference || undefined,
+          paymentProofFile: proofFile || undefined,
+          specialInstructions: notes || undefined,
+          couponCode: coupon?.code || undefined,
+          idempotencyKey: idemKey.current,
+          items: items.map((i) => ({ type: i.is_deal ? 'deal' : 'product', id: i.id, quantity: i.quantity, notes: i.notes || undefined })),
+        }),
       });
-
-      const data = await res.json();
-
+      const j = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to place order.');
+        if (j.code !== 'ordering_closed') idemKey.current = null; // allow a corrected retry as a new order
+        setError(j.error || 'Could not place your order.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
       }
-
-      // Clear cart and redirect to order tracking page
       clearCart();
-      router.push(`/orders/${data.orderId || data.orderNumber}`);
-    } catch (err) {
-      console.error('Checkout error:', err);
-      setFormError(err.message || 'An error occurred during checkout. Please try again.');
+      router.replace(`/orders/${j.orderId}?placed=1`);
+    } catch {
+      setError('Network problem. Please check your connection and try again.');
+    } finally {
       setSubmitting(false);
     }
   };
 
-  // If cart is empty
-  if (items.length === 0) {
+  if (authLoading || !user || !settings) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="animate-spin text-zinc-400" /></div>;
+
+  if (!items.length) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-20 h-20 bg-red-50 text-red-600 rounded-full flex items-center justify-center mb-4 shadow-sm">
-          <ShoppingBag size={40} />
-        </div>
-        <h1 className="text-2xl font-bold text-zinc-900">Your Cart is Empty</h1>
-        <p className="text-zinc-500 text-sm mt-1 max-w-sm">
-          Add some hot fresh Tandoori naans or deals before checking out!
-        </p>
-        <Link
-          href="/Menu"
-          className="mt-6 px-6 py-2.5 bg-red-700 hover:bg-red-600 text-white font-bold text-xs rounded-full shadow transition-colors"
-        >
-          View Full Menu
-        </Link>
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 text-center p-6">
+        <ShoppingBag size={36} className="text-zinc-300" />
+        <h1 className="font-bold text-zinc-800">Your cart is empty</h1>
+        <Link href="/Menu" className="px-5 py-2.5 bg-red-700 text-white rounded-xl text-sm font-bold">Browse the menu</Link>
       </div>
     );
   }
 
+  const closed = settings.orderingState && !settings.orderingState.open;
+  const deliveryOn = settings.delivery.enabled;
+  const pickupOn = settings.pickup.enabled;
+  const pay = instructions?.[paymentMethod];
+  const card = 'bg-white rounded-2xl border border-zinc-200 p-5 shadow-sm';
+
   return (
-    <div className="min-h-screen bg-zinc-50/70 pb-20">
-      {/* Top Breadcrumb Header */}
-      <div className="bg-zinc-950 text-white border-b border-zinc-800">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <Link
-            href="/Menu"
-            className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft size={14} /> Back to Menu
-          </Link>
-          <div className="text-xs font-semibold text-red-400 uppercase tracking-widest">
-            Haq Bahu Naan Checkout
-          </div>
-        </div>
-      </div>
+    <div className="bg-zinc-50 min-h-screen py-8 px-4">
+      <form onSubmit={place} className="max-w-5xl mx-auto grid lg:grid-cols-[1fr_340px] gap-6">
+        <div className="space-y-5">
+          <Link href="/Menu" className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-800"><ArrowLeft size={14} /> Back to menu</Link>
+          <h1 className="text-2xl font-black text-zinc-900">Checkout</h1>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 mb-2">
-          Review & Place Your Order
-        </h1>
-        <p className="text-xs sm:text-sm text-zinc-500 mb-6">
-          Online payment verification ensures your food is baked fresh and ready right on time.
-        </p>
-
-        {formError && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3 text-red-800 text-xs sm:text-sm shadow-sm animate-fade-in">
-            <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1 font-medium">{formError}</div>
-          </div>
-        )}
-
-        <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column: Form Details (8 cols) */}
-          <div className="lg:col-span-7 space-y-6">
-            {/* Step 1: Order Type */}
-            <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-xs space-y-3">
-              <h2 className="font-bold text-sm text-zinc-900 flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-red-700 text-white text-[11px] flex items-center justify-center">1</span>
-                Choose Fulfillment Method
-              </h2>
-
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setOrderType('delivery')}
-                  className={`p-4 rounded-xl border text-left flex flex-col gap-1 transition-all ${
-                    orderType === 'delivery'
-                      ? 'border-red-600 bg-red-50/50 ring-2 ring-red-600/20'
-                      : 'border-zinc-200 hover:border-zinc-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-sm text-zinc-900 flex items-center gap-1.5">
-                      <Bike size={16} className="text-red-700" /> Delivery
-                    </span>
-                    <span className="text-[11px] font-semibold text-zinc-500">3 km radius</span>
-                  </div>
-                  <p className="text-[11px] text-zinc-500">
-                    Delivered piping hot to your doorstep in Model Town & vicinity.
-                  </p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setOrderType('pickup')}
-                  className={`p-4 rounded-xl border text-left flex flex-col gap-1 transition-all ${
-                    orderType === 'pickup'
-                      ? 'border-red-600 bg-red-50/50 ring-2 ring-red-600/20'
-                      : 'border-zinc-200 hover:border-zinc-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-sm text-zinc-900 flex items-center gap-1.5">
-                      <Store size={16} className="text-red-700" /> Pickup
-                    </span>
-                    <span className="text-[11px] font-bold text-emerald-700">No Fee</span>
-                  </div>
-                  <p className="text-[11px] text-zinc-500">
-                    Collect directly from Shop #4, Model Town Link Rd, Lahore.
-                  </p>
-                </button>
-              </div>
+          {closed && (
+            <div role="alert" className="rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm p-4">
+              {settings.orderingState.notice || 'We are not taking orders right now.'}
             </div>
-
-            {/* Step 2: Customer Contact Information */}
-            <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-xs space-y-4">
-              <h2 className="font-bold text-sm text-zinc-900 flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-red-700 text-white text-[11px] flex items-center justify-center">2</span>
-                Contact Information
-              </h2>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-700 mb-1">
-                    Full Name <span className="text-red-600">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="e.g. Ali Ahmed"
-                    className="w-full text-xs p-3 border border-zinc-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-600/30 focus:border-red-600 transition-all placeholder-zinc-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-700 mb-1">
-                    Phone / WhatsApp Number <span className="text-red-600">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder="0300 1234567"
-                    className="w-full text-xs p-3 border border-zinc-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-600/30 focus:border-red-600 transition-all placeholder-zinc-400"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-zinc-700 mb-1">
-                    Email Address (Optional, for digital receipt)
-                  </label>
-                  <input
-                    type="email"
-                    value={customerEmail}
-                    onChange={(e) => setCustomerEmail(e.target.value)}
-                    placeholder="youremail@example.com"
-                    className="w-full text-xs p-3 border border-zinc-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-600/30 focus:border-red-600 transition-all placeholder-zinc-400"
-                  />
-                </div>
-              </div>
+          )}
+          {error && (
+            <div role="alert" className="rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm p-4 flex gap-2">
+              <AlertCircle size={16} className="shrink-0 mt-0.5" /> {error}
             </div>
+          )}
 
-            {/* Step 3: Location / Delivery Radius (Only if delivery selected) */}
-            {orderType === 'delivery' && (
-              <LocationRadiusChecker />
+          <section className={card}>
+            <h2 className="font-bold text-sm mb-3">How would you like your order?</h2>
+            <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-100 rounded-xl">
+              {[['delivery', 'Home delivery', Bike, deliveryOn], ['pickup', 'Pickup', Store, pickupOn]].map(([k, label, Icon, on]) => (
+                <button key={k} type="button" disabled={!on} onClick={() => setOrderType(k)}
+                  className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold disabled:opacity-40 ${orderType === k ? 'bg-red-700 text-white shadow' : 'text-zinc-600'}`}>
+                  <Icon size={15} /> {label}{!on && ' (unavailable)'}
+                </button>
+              ))}
+            </div>
+            {orderType === 'pickup' && (
+              <p className="text-xs text-zinc-600 mt-3">Collect from: <strong>{settings.shop.address}</strong>. <a className="text-red-700 underline" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${settings.shop.lat},${settings.shop.lng}`}>Get directions</a></p>
+            )}
+          </section>
+
+          {orderType === 'delivery' && <LocationRadiusChecker />}
+
+          <section className={card}>
+            <h2 className="font-bold text-sm mb-1">Contact</h2>
+            <p className="text-xs text-zinc-600">{user.fullName} · {user.phone} · {user.email}</p>
+            <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={500} placeholder="Special instructions (optional)" className="mt-3 w-full text-sm p-3 border border-zinc-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-600/30" />
+          </section>
+
+          <section className={card}>
+            <h2 className="font-bold text-sm mb-3">Payment</h2>
+            {orderType === 'pickup' && <p className="text-xs text-zinc-500 mb-3">Cash on delivery is only available for home delivery.</p>}
+            {available.length === 0 ? (
+              <p className="text-sm text-red-700">No payment method is available right now. Please contact the shop.</p>
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-2">
+                {available.map((m) => {
+                  const Icon = ICONS[m];
+                  return (
+                    <label key={m} className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer text-sm ${paymentMethod === m ? 'border-red-600 bg-red-50' : 'border-zinc-200'}`}>
+                      <input type="radio" name="pm" className="accent-red-700" checked={paymentMethod === m} onChange={() => setPaymentMethod(m)} />
+                      <Icon size={16} className="text-zinc-600" /> {PAYMENT_LABELS[m]}
+                    </label>
+                  );
+                })}
+              </div>
             )}
 
-            {/* Step 4: Bank Transfer & Payment Details */}
-            <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="font-bold text-sm text-zinc-900 flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-red-700 text-white text-[11px] flex items-center justify-center">
-                    {orderType === 'delivery' ? '4' : '3'}
+            {paymentMethod === 'cod' && <p className="text-xs text-zinc-600 mt-3">Pay in cash to the rider when your order arrives.</p>}
+
+            {paymentMethod && paymentMethod !== 'cod' && (
+              <div className="mt-4 space-y-3">
+                {pay ? (
+                  <div className="rounded-xl bg-zinc-50 border border-zinc-200 p-4 text-sm space-y-2">
+                    {Object.entries(pay).filter(([k, v]) => k !== 'enabled' && v).map(([k, v]) => (
+                      <div key={k} className="flex items-center justify-between gap-2">
+                        <span className="text-zinc-500 capitalize">{k.replace(/_/g, ' ')}</span>
+                        <button type="button" onClick={() => copy(String(v), k)} className="flex items-center gap-1.5 font-semibold text-zinc-900">
+                          {v} {copied === k ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} className="text-zinc-400" />}
+                        </button>
+                      </div>
+                    ))}
+                    {instructions?.instructions && <p className="text-xs text-zinc-600 pt-2 border-t border-zinc-200">{instructions.instructions}</p>}
+                  </div>
+                ) : <Loader2 className="animate-spin text-zinc-400" size={16} />}
+                <p className="text-xs text-zinc-600">Send <strong>Rs. {total}</strong>, then enter the transaction ID and/or upload a screenshot. You can also add it after placing the order. We confirm your order once we verify the payment.</p>
+                <input value={reference} onChange={(e) => setReference(e.target.value)} maxLength={100} placeholder="Transaction / reference ID" className="w-full text-sm p-3 border border-zinc-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-600/30" />
+                <label className="flex items-center gap-2 text-xs font-semibold text-zinc-700 cursor-pointer">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-300 bg-white">
+                    {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} {proofFile ? 'Screenshot attached ✓' : 'Upload payment screenshot'}
                   </span>
-                  Online Payment & Transfer Instructions
-                </h2>
-                <span className="text-[11px] bg-red-50 text-red-700 font-bold px-2 py-0.5 rounded-full border border-red-200">
-                  Pre-Payment Required
-                </span>
+                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
+                </label>
               </div>
+            )}
+          </section>
+        </div>
 
-              {/* Payment Method Switcher */}
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: 'bank_transfer', label: 'Meezan Bank', icon: <Building2 size={14} /> },
-                  { id: 'easypaisa', label: 'EasyPaisa', icon: <CreditCard size={14} /> },
-                  { id: 'jazzcash', label: 'JazzCash', icon: <CreditCard size={14} /> },
-                ].map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => setPaymentMethod(m.id)}
-                    className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
-                      paymentMethod === m.id
-                        ? 'bg-zinc-900 text-white border-zinc-900 shadow-xs'
-                        : 'border-zinc-200 text-zinc-700 hover:bg-zinc-50'
-                    }`}
-                  >
-                    {m.icon}
-                    {m.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Display Bank/Account Details based on selected tab */}
-              <div className="bg-amber-50/60 border border-amber-200 rounded-xl p-4 text-xs space-y-3">
-                <div className="font-bold text-amber-950 flex items-center gap-1.5">
-                  <ShieldCheck size={16} className="text-amber-700" />
-                  Official Account Information for Haq Bahu Naan Shop:
-                </div>
-
-                {paymentMethod === 'bank_transfer' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-zinc-800">
-                    <div className="bg-white p-2.5 rounded-lg border border-amber-200/80">
-                      <span className="text-[10px] text-zinc-500 uppercase block font-semibold">Bank Name</span>
-                      <span className="font-bold text-zinc-900">{bankDetails.bank_name}</span>
-                    </div>
-
-                    <div className="bg-white p-2.5 rounded-lg border border-amber-200/80">
-                      <span className="text-[10px] text-zinc-500 uppercase block font-semibold">Account Title</span>
-                      <span className="font-bold text-zinc-900">{bankDetails.account_title}</span>
-                    </div>
-
-                    <div className="bg-white p-2.5 rounded-lg border border-amber-200/80 flex items-center justify-between sm:col-span-2">
-                      <div>
-                        <span className="text-[10px] text-zinc-500 uppercase block font-semibold">Account Number</span>
-                        <span className="font-mono font-bold text-zinc-900 text-xs sm:text-sm">
-                          {bankDetails.account_number}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard(bankDetails.account_number, 'acc')}
-                        className="p-1.5 rounded-md hover:bg-zinc-100 text-zinc-600 transition-colors"
-                        title="Copy account number"
-                      >
-                        {copiedField === 'acc' ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
-                      </button>
-                    </div>
-
-                    <div className="bg-white p-2.5 rounded-lg border border-amber-200/80 flex items-center justify-between sm:col-span-2">
-                      <div>
-                        <span className="text-[10px] text-zinc-500 uppercase block font-semibold">IBAN</span>
-                        <span className="font-mono font-bold text-zinc-900 text-xs truncate">
-                          {bankDetails.iban}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard(bankDetails.iban, 'iban')}
-                        className="p-1.5 rounded-md hover:bg-zinc-100 text-zinc-600 transition-colors"
-                        title="Copy IBAN"
-                      >
-                        {copiedField === 'iban' ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {paymentMethod === 'easypaisa' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-zinc-800">
-                    <div className="bg-white p-2.5 rounded-lg border border-amber-200/80">
-                      <span className="text-[10px] text-zinc-500 uppercase block font-semibold">EasyPaisa Title</span>
-                      <span className="font-bold text-zinc-900">{bankDetails.easypaisa_title}</span>
-                    </div>
-
-                    <div className="bg-white p-2.5 rounded-lg border border-amber-200/80 flex items-center justify-between">
-                      <div>
-                        <span className="text-[10px] text-zinc-500 uppercase block font-semibold">EasyPaisa Mobile #</span>
-                        <span className="font-mono font-bold text-zinc-900">{bankDetails.easypaisa_number}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard(bankDetails.easypaisa_number, 'ep')}
-                        className="p-1.5 rounded-md hover:bg-zinc-100 text-zinc-600"
-                      >
-                        {copiedField === 'ep' ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {paymentMethod === 'jazzcash' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-zinc-800">
-                    <div className="bg-white p-2.5 rounded-lg border border-amber-200/80">
-                      <span className="text-[10px] text-zinc-500 uppercase block font-semibold">JazzCash Title</span>
-                      <span className="font-bold text-zinc-900">{bankDetails.jazzcash_title}</span>
-                    </div>
-
-                    <div className="bg-white p-2.5 rounded-lg border border-amber-200/80 flex items-center justify-between">
-                      <div>
-                        <span className="text-[10px] text-zinc-500 uppercase block font-semibold">JazzCash Mobile #</span>
-                        <span className="font-mono font-bold text-zinc-900">{bankDetails.jazzcash_number}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard(bankDetails.jazzcash_number, 'jc')}
-                        className="p-1.5 rounded-md hover:bg-zinc-100 text-zinc-600"
-                      >
-                        {copiedField === 'jc' ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                <p className="text-[11px] text-amber-900/90 leading-relaxed pt-1">
-                  <strong>Instructions:</strong> Transfer exactly <span className="font-extrabold text-red-700">Rs. {total}</span> using your mobile app or ATM. Then enter the Transaction Reference ID below. Our manager verifies each transaction before the tandoor chef prepares your order.
-                </p>
-              </div>
-
-              {/* Payment Proof Inputs */}
-              <div className="space-y-3 pt-2">
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-800 mb-1">
-                    Transaction ID / Reference Number (TRX ID) <span className="text-red-600">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={paymentReference}
-                    onChange={(e) => setPaymentReference(e.target.value)}
-                    placeholder="e.g. 0293847561 or bank ref"
-                    className="w-full text-xs p-3 border border-zinc-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-600/30 focus:border-red-600 transition-all font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-800 mb-1">
-                    Payment Receipt Screenshot URL / Image Link (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={paymentProofUrl}
-                    onChange={(e) => setPaymentProofUrl(e.target.value)}
-                    placeholder="https://... or payment receipt link"
-                    className="w-full text-xs p-3 border border-zinc-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-600/30 focus:border-red-600 transition-all placeholder-zinc-400"
-                  />
-                </div>
-              </div>
+        <aside className="lg:sticky lg:top-24 h-fit space-y-4">
+          <div className={card}>
+            <h2 className="font-bold text-sm mb-3">Order summary</h2>
+            <ul className="divide-y divide-zinc-100 text-sm">
+              {items.map((i) => (
+                <li key={i.cartKey} className="py-2 flex justify-between gap-2"><span>{i.quantity} × {i.title}</span><span className="font-semibold">Rs. {i.price * i.quantity}</span></li>
+              ))}
+            </ul>
+            <div className="mt-3 flex gap-2">
+              <input value={couponInput} onChange={(e) => setCouponInput(e.target.value.toUpperCase())} placeholder="Coupon code" maxLength={40} aria-label="Coupon code" className="flex-1 text-sm p-2.5 border border-zinc-300 rounded-xl" />
+              <button type="button" onClick={applyCoupon} disabled={!couponInput} className="px-3 text-sm font-semibold border rounded-xl disabled:opacity-40">Apply</button>
             </div>
-
-            {/* Special Instructions */}
-            <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-xs">
-              <label className="block text-xs font-semibold text-zinc-800 mb-1">
-                Order Note / Delivery Instructions (Optional)
-              </label>
-              <textarea
-                rows={2}
-                value={specialInstructions}
-                onChange={(e) => setSpecialInstructions(e.target.value)}
-                placeholder="e.g., Ring bell twice, extra napkins, keep naans extra hot..."
-                className="w-full text-xs p-3 border border-zinc-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-600/30 focus:border-red-600 transition-all placeholder-zinc-400"
-              />
-            </div>
+            {couponMsg && <p role="alert" className="text-xs text-red-700 mt-1">{couponMsg}</p>}
+            <dl className="mt-3 pt-3 border-t border-zinc-200 text-sm space-y-1">
+              <div className="flex justify-between"><dt className="text-zinc-500">Subtotal</dt><dd>Rs. {subtotal}</dd></div>
+              {coupon && <div className="flex justify-between text-emerald-700"><dt>Coupon {coupon.code}</dt><dd>- Rs. {coupon.discount}</dd></div>}
+              <div className="flex justify-between"><dt className="text-zinc-500">Delivery</dt><dd>{orderType === 'pickup' ? 'Pickup' : deliveryFee ? `Rs. ${deliveryFee}` : 'Free'}</dd></div>
+              <div className="flex justify-between font-black text-base pt-1"><dt>Total</dt><dd>Rs. {total - (coupon?.discount || 0)}</dd></div>
+            </dl>
+            <p className="text-[11px] text-zinc-400 mt-2">Final prices and availability are confirmed when you place the order.</p>
+            <button type="submit" disabled={submitting || closed || !paymentMethod} className="mt-4 w-full flex items-center justify-center gap-2 bg-red-700 hover:bg-red-600 disabled:bg-zinc-400 text-white font-bold py-3 rounded-xl text-sm">
+              {submitting ? <><Loader2 size={16} className="animate-spin" /> Placing order…</> : `Place order · Rs. ${total}`}
+            </button>
           </div>
-
-          {/* Right Column: Order Summary (5 cols) */}
-          <div className="lg:col-span-5 space-y-5 lg:sticky lg:top-20">
-            <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-sm space-y-4">
-              <h2 className="font-bold text-sm text-zinc-900 pb-3 border-b border-zinc-100 flex items-center justify-between">
-                <span>Order Summary ({items.length} {items.length === 1 ? 'item' : 'items'})</span>
-                <span className="text-xs text-red-700 font-semibold">{orderType.toUpperCase()}</span>
-              </h2>
-
-              {/* Items List */}
-              <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-                {items.map((item) => (
-                  <div key={item.cartKey} className="flex items-center gap-3 text-xs">
-                    <img
-                      src={item.image_url || '/Nutella.jpg'}
-                      alt={item.title}
-                      className="w-12 h-12 object-cover rounded-lg border border-zinc-100 flex-shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-zinc-900 truncate">{item.title}</div>
-                      <div className="text-[11px] text-zinc-400">
-                        Qty: {item.quantity} &bull; Rs. {item.price} each
-                      </div>
-                      {item.notes && (
-                        <div className="text-[10px] text-zinc-500 italic truncate">&quot;{item.notes}&quot;</div>
-                      )}
-                    </div>
-                    <div className="font-bold text-zinc-900 flex-shrink-0">
-                      Rs. {item.price * item.quantity}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Bill Breakdown */}
-              <div className="pt-3 border-t border-zinc-100 space-y-2 text-xs text-zinc-600">
-                <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span className="font-semibold text-zinc-900">Rs. {subtotal}</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span>Delivery Charges</span>
-                  <span className="font-semibold text-zinc-900">
-                    {deliveryFee === 0 ? (
-                      <span className="text-emerald-700 font-bold">FREE</span>
-                    ) : (
-                      `Rs. ${deliveryFee}`
-                    )}
-                  </span>
-                </div>
-
-                <div className="pt-3 border-t border-zinc-200 flex justify-between items-center text-sm font-extrabold text-zinc-900">
-                  <span>Total Payable</span>
-                  <span className="text-xl text-red-700">Rs. {total}</span>
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full bg-red-700 hover:bg-red-600 disabled:bg-zinc-400 text-white font-extrabold py-3.5 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-98 cursor-pointer"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
-                    Placing Order & Submitting Payment...
-                  </>
-                ) : (
-                  <>
-                    <span>Place Order (Rs. {total})</span>
-                  </>
-                )}
-              </button>
-
-              <p className="text-[11px] text-zinc-400 text-center leading-snug">
-                By placing your order, you agree that your payment will be verified by the shop owner before fulfillment.
-              </p>
-            </div>
-          </div>
-        </form>
-      </div>
+        </aside>
+      </form>
     </div>
   );
 }

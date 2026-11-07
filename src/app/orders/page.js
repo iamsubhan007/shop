@@ -1,135 +1,109 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Receipt, ArrowRight, Clock, Bike, Store, ShoppingBag, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Loader2, Receipt, RotateCcw, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useCart } from '@/context/CartContext';
+import { PAYMENT_LABELS, statusColor } from '@/lib/orderStatus';
 
-export default function OrdersListPage() {
-  const { user } = useAuth();
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function OrdersPage() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const { addToCart, clearCart } = useCart();
+  const [orders, setOrders] = useState(null);
+  const [error, setError] = useState('');
+  const [reorder, setReorder] = useState(null); // { orderNumber, items }
+  const [busy, setBusy] = useState('');
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const url = user?.id ? `/api/orders?userId=${user.id}` : '/api/orders';
-        const res = await fetch(url);
-        const data = await res.json();
-        if (data.orders) {
-          setOrders(data.orders);
-        }
-      } catch (err) {
-        console.error('Error fetching orders:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (authLoading) return;
+    if (!user) return router.replace('/auth?next=/orders');
+    fetch('/api/orders/mine', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j) => (j.orders ? setOrders(j.orders) : setError(j.error || 'Could not load orders.')))
+      .catch(() => setError('Could not load orders.'));
+  }, [authLoading, user, router]);
 
-    fetchOrders();
-  }, [user]);
+  const startReorder = async (o) => {
+    setBusy(o.id);
+    const res = await fetch(`/api/orders/${o.id}/reorder`, { method: 'POST' });
+    const j = await res.json().catch(() => ({}));
+    setBusy('');
+    if (!res.ok) return setError(j.error || 'Could not prepare reorder.');
+    setReorder({ orderNumber: o.orderNumber, items: j.items });
+  };
+
+  const confirmReorder = () => {
+    clearCart();
+    reorder.items.filter((i) => i.available).forEach((i) =>
+      addToCart({ id: i.id, title: i.title, price: i.price, image_url: i.imageUrl, is_deal: i.type === 'deal' }, i.quantity)
+    );
+    setReorder(null);
+  };
+
+  if (authLoading || (!orders && !error)) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="animate-spin text-zinc-400" /></div>;
 
   return (
-    <div className="min-h-screen bg-zinc-50/70 pb-20">
-      <div className="bg-zinc-950 text-white border-b border-zinc-800">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-          <h1 className="text-2xl font-black text-white flex items-center gap-2">
-            <Receipt className="text-red-600" size={24} />
-            My Orders
-          </h1>
-          <p className="text-xs text-zinc-400 mt-1">
-            Track your recent and past orders with live tandoor & delivery updates.
-          </p>
+    <div className="max-w-3xl mx-auto px-4 py-8">
+      <h1 className="text-2xl font-black text-zinc-900 mb-6">My orders</h1>
+      {error && <div role="alert" className="mb-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm p-3">{error}</div>}
+      {orders?.length === 0 && (
+        <div className="text-center py-16 text-zinc-500">
+          <Receipt className="mx-auto mb-3 text-zinc-300" size={36} />
+          <p className="text-sm mb-4">You haven&apos;t placed any orders yet.</p>
+          <Link href="/Menu" className="px-5 py-2.5 bg-red-700 text-white rounded-xl text-sm font-bold">Start ordering</Link>
         </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-6">
-        {loading ? (
-          <div className="py-20 flex flex-col items-center justify-center">
-            <Loader2 size={32} className="text-red-700 animate-spin mb-2" />
-            <span className="text-xs font-semibold text-zinc-500">Loading orders...</span>
-          </div>
-        ) : orders.length === 0 ? (
-          <div className="py-20 flex flex-col items-center justify-center text-center bg-white rounded-3xl border border-zinc-200 p-8 shadow-xs">
-            <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mb-4">
-              <ShoppingBag size={28} />
+      )}
+      <ul className="space-y-3">
+        {orders?.map((o) => (
+          <li key={o.id} className="bg-white rounded-2xl border border-zinc-200 p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Link href={`/orders/${o.id}`} className="font-bold text-zinc-900 hover:text-red-700">{o.orderNumber}</Link>
+              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${statusColor(o.status)}`}>{o.status}</span>
             </div>
-            <h2 className="text-lg font-bold text-zinc-900">No Orders Placed Yet</h2>
-            <p className="text-xs text-zinc-500 mt-1 max-w-xs">
-              When you place an order, its live tracking status will appear here.
+            <p className="text-xs text-zinc-500 mt-1">
+              {new Date(o.createdAt).toLocaleString('en-PK', { timeZone: 'Asia/Karachi', dateStyle: 'medium', timeStyle: 'short' })} · {o.orderType === 'delivery' ? 'Delivery' : 'Pickup'} · {PAYMENT_LABELS[o.paymentMethod]}
             </p>
-            <Link
-              href="/Menu"
-              className="mt-5 px-6 py-2.5 bg-red-700 hover:bg-red-600 text-white text-xs font-bold rounded-full shadow transition-colors"
-            >
-              Browse Menu
-            </Link>
+            <p className="text-xs text-zinc-600 mt-2 line-clamp-2">{o.items.map((i) => `${i.quantity}× ${i.title}`).join(', ')}</p>
+            <div className="flex items-center justify-between mt-3">
+              <span className="font-black">Rs. {o.totalAmount}</span>
+              <div className="flex gap-2">
+                <Link href={`/orders/${o.id}`} className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-zinc-300">Track</Link>
+                {o.status === 'Completed' && (
+                  <button onClick={() => startReorder(o)} disabled={busy === o.id} className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-700 text-white flex items-center gap-1">
+                    {busy === o.id ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />} Reorder
+                  </button>
+                )}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {reorder && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Reorder">
+          <div className="bg-white rounded-2xl w-full max-w-md p-5 max-h-[85vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="font-bold">Reorder {reorder.orderNumber}</h2>
+              <button onClick={() => setReorder(null)} aria-label="Close"><X size={18} /></button>
+            </div>
+            <p className="text-xs text-zinc-500 mb-3">Prices below are today&apos;s prices. Nothing is ordered until you check out.</p>
+            <ul className="space-y-2 text-sm">
+              {reorder.items.map((i, k) => (
+                <li key={k} className={`flex justify-between gap-2 ${i.available ? '' : 'text-zinc-400'}`}>
+                  <span>{i.quantity}× {i.title}{!i.available && <em className="block text-[11px] text-red-600 not-italic">No longer available — will be skipped</em>}</span>
+                  {i.available && <span className="text-right">Rs. {i.price * i.quantity}{i.priceChanged && <em className="block text-[11px] text-amber-700 not-italic">was Rs. {i.oldPrice} each</em>}</span>}
+                </li>
+              ))}
+            </ul>
+            {reorder.items.some((i) => i.available) ? (
+              <button onClick={() => { confirmReorder(); router.push('/checkout'); }} className="mt-5 w-full bg-red-700 text-white font-bold py-3 rounded-xl text-sm">Add to cart & continue</button>
+            ) : <p className="mt-4 text-sm text-red-700">None of these items are available right now.</p>}
           </div>
-        ) : (
-          <div className="space-y-3.5">
-            {orders.map((order) => {
-              const isPending = order.status === 'Payment Pending';
-              const isCompleted = order.status === 'Completed';
-
-              return (
-                <Link
-                  key={order.id || order.order_number}
-                  href={`/orders/${order.id || order.order_number}`}
-                  className="block bg-white rounded-2xl border border-zinc-200 p-4 sm:p-5 shadow-xs hover:shadow-md hover:border-red-200 transition-all group"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-extrabold text-sm text-zinc-900 group-hover:text-red-700 transition-colors">
-                          #{order.order_number}
-                        </span>
-                        <span className="text-[11px] text-zinc-400">
-                          {new Date(order.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2 mt-1.5 text-xs text-zinc-600">
-                        {order.order_type === 'delivery' ? (
-                          <span className="flex items-center gap-1 text-zinc-500">
-                            <Bike size={13} className="text-red-700" /> Delivery
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1 text-zinc-500">
-                            <Store size={13} className="text-red-700" /> Pickup
-                          </span>
-                        )}
-                        <span>&bull;</span>
-                        <span className="font-bold text-zinc-900">Rs. {order.total_amount}</span>
-                        {order.items && (
-                          <>
-                            <span>&bull;</span>
-                            <span className="text-zinc-500">{order.items.length} items</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-100">
-                      <span
-                        className={`text-xs font-bold px-3 py-1 rounded-full ${
-                          isCompleted
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : isPending
-                            ? 'bg-amber-100 text-amber-900'
-                            : 'bg-red-700 text-white'
-                        }`}
-                      >
-                        {order.status}
-                      </span>
-                      <ArrowRight size={16} className="text-zinc-400 group-hover:text-red-600 group-hover:translate-x-1 transition-all" />
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

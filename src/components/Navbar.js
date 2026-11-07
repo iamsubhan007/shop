@@ -29,7 +29,8 @@ export default function Navbar() {
 
   const { itemCount, subtotal, openCart } = useCart();
   const { wishlistCount } = useWishlist();
-  const { user, profile, isAdmin, signOut } = useAuth();
+  const { user, signOut } = useAuth();
+  const profile = user ? { full_name: user.fullName } : null;
 
   const navLinks = [
     { href: '/', label: 'Home' },
@@ -173,15 +174,6 @@ export default function Navbar() {
                       <Receipt size={14} /> My Orders
                     </Link>
 
-                    {isAdmin && (
-                      <Link
-                        href="/admin"
-                        className="flex items-center gap-2 px-3.5 py-2 hover:bg-red-50 text-red-700 font-bold"
-                      >
-                        <ShieldCheck size={14} /> Admin Dashboard
-                      </Link>
-                    )}
-
                     <div className="border-t border-zinc-100 my-1" />
 
                     <button
@@ -233,17 +225,6 @@ export default function Navbar() {
               {label}
             </Link>
           ))}
-
-          {isAdmin && (
-            <Link
-              href="/admin"
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2 px-3 py-2 text-amber-400 hover:bg-zinc-800 rounded-xl text-sm font-semibold transition-colors"
-            >
-              <ShieldCheck size={15} />
-              Admin / Owner Dashboard
-            </Link>
-          )}
 
           {!user && (
             <Link

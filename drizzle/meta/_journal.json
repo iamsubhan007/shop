@@ -8,6 +8,20 @@
       "when": 1791236835035,
       "tag": "0000_wide_tomorrow_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794049849384,
+      "tag": "0001_aromatic_overlord",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794052629918,
+      "tag": "0002_fixed_nekra",
+      "breakpoints": true
     }
   ]
 }

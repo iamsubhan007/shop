@@ -3,44 +3,25 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, X, ShoppingCart, Phone } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-import { initialDeals } from '@/lib/data/initialData';
-
-const images = [
-  {
-    dealId: 'd1',
-    title: 'Crazy Deal 1',
-    price: 1050,
-    url: 'deal1.png',
-    message: `Crazy Deal 1\n2 Pizza Naan + 500 ml Cola Next\nSet Quantity: 1`,
-  },
-  {
-    dealId: 'd2',
-    title: 'Crazy Deal 2',
-    price: 1400,
-    url: 'deal2.png',
-    message: `Crazy Deal 2\n5 Beef/Chicken Naan + 500 ml Cola Next\nSet Quantity: 1`,
-  },
-  {
-    dealId: 'd3',
-    title: 'Crazy Deal 3',
-    price: 950,
-    url: 'deal3.png',
-    message: `Crazy Deal 3\n5 Aloo Naan + 500 ml Cola Next + 1 Raita\nSet Quantity: 1`,
-  },
-];
+import { useSite } from '@/context/SiteContext';
 
 const INTERVAL = 4000;
-const WHATSAPP_NUMBER = '923094130285';
 
 export default function ImageCarousel() {
   const { addToCart } = useCart();
+  const { deals, settings } = useSite();
+  const images = deals
+    .filter((d) => d.image_url)
+    .map((d) => ({ dealId: d.id, title: d.title, price: d.price, url: d.image_url, message: `${d.title}
+${(d.items || []).join(' + ')}
+Set Quantity: 1` }));
   const [currentIndex, setCurrentIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
-    if (paused) return;
+    if (paused || images.length < 2) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % images.length);
     }, INTERVAL);
@@ -73,17 +54,17 @@ export default function ImageCarousel() {
     if (!selectedImage) return;
     const message = selectedImage.message;
     navigator.clipboard.writeText(message);
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    const url = `https://wa.me/${settings?.shop.whatsapp || ''}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
 
   const handleAddToCart = () => {
     if (!selectedImage) return;
-    const matchedDeal = initialDeals.find((d) => d.id === selectedImage.dealId) || {
+    const matchedDeal = deals.find((d) => d.id === selectedImage.dealId) || {
       id: selectedImage.dealId || 'deal',
       title: selectedImage.title,
       price: selectedImage.price,
-      image_url: `/${selectedImage.url}`,
+      image_url: selectedImage.url,
     };
 
     addToCart(
