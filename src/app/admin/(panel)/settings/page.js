@@ -4,6 +4,11 @@ import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { api } from '@/components/admin/api';
 
+function fmtHours(a, b) {
+  const f = (t) => { const [h, m] = t.split(':').map(Number); return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`; };
+  return `${f(a)} - ${f(b)}`;
+}
+
 const inp = 'w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm';
 const Field = ({ label, children, hint }) => <label className="block text-xs font-semibold text-zinc-700">{label}{children}{hint && <span className="block font-normal text-zinc-400 mt-0.5">{hint}</span>}</label>;
 const Check = ({ label, checked, onChange }) => <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={!!checked} onChange={(e) => onChange(e.target.checked)} className="w-5 h-5 accent-red-700" /> {label}</label>;
@@ -106,7 +111,8 @@ export default function SettingsAdmin() {
             <Field label="Phone"><input className={inp} value={v.phone} onChange={(e) => set({ phone: e.target.value })} /></Field>
             <Field label="WhatsApp number" hint="Digits with country code, e.g. 923001234567"><input className={inp} value={v.whatsapp} onChange={(e) => set({ whatsapp: e.target.value })} /></Field>
             <Field label="Email"><input className={inp} value={v.email} onChange={(e) => set({ email: e.target.value })} /></Field>
-            <Field label="Opening hours"><input className={inp} value={v.hours} onChange={(e) => set({ hours: e.target.value })} /></Field>
+            <Field label="Opens at (daily)" hint="Shop time (Pakistan). Orders are blocked outside opening hours."><input type="time" required className={inp} value={v.open_time || '08:00'} onChange={(e) => set({ open_time: e.target.value, hours: fmtHours(e.target.value, v.close_time || '23:00') })} /></Field>
+            <Field label="Closes at (daily)"><input type="time" required className={inp} value={v.close_time || '23:00'} onChange={(e) => set({ close_time: e.target.value, hours: fmtHours(v.open_time || '08:00', e.target.value) })} /></Field>
             <Field label="Google Maps link"><input className={inp} value={v.maps_url} onChange={(e) => set({ maps_url: e.target.value })} /></Field>
             <Field label="Latitude"><input type="number" step="any" className={inp} value={v.lat} onChange={(e) => set({ lat: e.target.value })} /></Field>
             <Field label="Longitude"><input type="number" step="any" className={inp} value={v.lng} onChange={(e) => set({ lng: e.target.value })} /></Field>

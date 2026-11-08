@@ -5,8 +5,15 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 const SiteContext = createContext(null);
 
 // Map API shape to the field names the existing card components already use.
+// Products created in the admin panel only have a category; derive the menu section ("genre") from it.
+const SLUG_GENRE = {
+  'special-items': 'Special', 'chicken-naan': 'Chicken', 'beef-qeema-naan': 'Beef', 'mutton-naan': 'Mutton',
+  'rogni-naan': 'Rogni', 'aloo-wala-naan': 'Aloo', 'besaan-wala-naan': 'Besaan', pratha: 'Pratha',
+  'regular-items': 'Regular', 'sides-and-sauces': 'Side',
+};
 const mapProduct = (p) => ({
   ...p,
+  genre: p.genre || SLUG_GENRE[p.categorySlug] || p.categoryName || 'Other',
   image_url: p.imageUrl,
   additional_images: p.additionalImages,
   category_name: p.categoryName,

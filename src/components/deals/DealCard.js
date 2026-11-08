@@ -32,7 +32,7 @@ export default function DealCard({ deal, onSelect }) {
       )}
 
       {/* Image */}
-      <div className="relative aspect-16/9 overflow-hidden bg-zinc-900">
+      <div className="relative aspect-[16/9] overflow-hidden bg-zinc-900">
         <img
           src={deal.image_url}
           alt={deal.title}

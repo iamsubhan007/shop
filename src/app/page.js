@@ -196,7 +196,7 @@ export default function Homepage() {
         {/* Product Cards Grid */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-20">
           {filteredItems.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 auto-rows-fr gap-3.5 sm:gap-5">
               {filteredItems.map((item) => (
                 <FoodCard
                   key={item.id}

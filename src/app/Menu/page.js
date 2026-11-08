@@ -25,7 +25,7 @@ export default function MenuPage() {
   }, []);
 
   // Category mapping
-  const categorySections = [
+  const baseSections = [
     { title: 'Special Items', genre: 'Special' },
     { title: 'Chicken Naan', genre: 'Chicken' },
     { title: 'Beef Qeema Naan', genre: 'Beef' },
@@ -37,6 +37,10 @@ export default function MenuPage() {
     { title: 'Regular Items', genre: 'Regular' },
     { title: 'Sides & Sauces', genre: 'Side' },
   ];
+  // Categories added later in the admin panel get their own section automatically.
+  const known = new Set(baseSections.map((s) => s.genre.toLowerCase()));
+  const extraSections = [...new Set(products.map((p) => p.genre).filter((g) => g && !known.has(g.toLowerCase())))].map((g) => ({ title: g, genre: g }));
+  const categorySections = [...baseSections, ...extraSections];
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -139,7 +143,7 @@ export default function MenuPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 auto-rows-fr gap-3.5 sm:gap-4">
                 {itemsInSection.map((product) => (
                   <FoodCard
                     key={product.id}

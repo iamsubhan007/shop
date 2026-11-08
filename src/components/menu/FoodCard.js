@@ -28,16 +28,16 @@ export default function FoodCard({ product, onSelect }) {
   return (
     <div
       onClick={() => onSelect && onSelect(product)}
-      className={`group bg-white rounded-2xl overflow-hidden border border-zinc-200/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col cursor-pointer relative ${
+      className={`group bg-white rounded-2xl overflow-hidden border border-zinc-200/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col cursor-pointer relative h-full ${
         !isAvailable ? 'opacity-75' : ''
       }`}
     >
       {/* Food Image & Badges */}
-      <div className="relative aspect-4/3 overflow-hidden bg-zinc-100">
+      <div className="relative aspect-[4/3] shrink-0 overflow-hidden bg-zinc-100">
         <img
           src={imageSrc}
           alt={title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
           loading="lazy"
         />
 
@@ -79,14 +79,13 @@ export default function FoodCard({ product, onSelect }) {
       {/* Card Content */}
       <div className="p-3.5 flex flex-col flex-1 justify-between gap-2">
         <div>
-          <h3 className="font-bold text-sm text-zinc-900 group-hover:text-red-700 transition-colors line-clamp-1 leading-snug">
+          {/* Fixed-height title (2 lines) and description (2 lines) so every card is identical in size */}
+          <h3 title={title} className="font-bold text-sm text-zinc-900 group-hover:text-red-700 transition-colors line-clamp-2 leading-snug h-[2.5rem]">
             {title}
           </h3>
-          {product.description && (
-            <p className="text-[11px] text-zinc-500 line-clamp-2 mt-1 leading-snug font-normal">
-              {product.description}
-            </p>
-          )}
+          <p className="text-[11px] text-zinc-500 line-clamp-2 mt-1 leading-snug font-normal h-[2rem]">
+            {product.description || ''}
+          </p>
         </div>
 
         {/* Action button */}
