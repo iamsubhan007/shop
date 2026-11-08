@@ -17,7 +17,7 @@ export default function SupportButton() {
       target="_blank"
       rel="noreferrer"
       aria-label="Chat with us on WhatsApp"
-      className="fixed bottom-4 right-4 z-40 w-13 h-13 p-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg flex items-center justify-center"
+      className="fixed bottom-4 right-4 z-40 w-14 h-14 p-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg flex items-center justify-center"
     >
       <MessageCircle size={24} />
     </a>

@@ -158,7 +158,7 @@ export default function MenuPage() {
       </div>
 
       {/* Floating Chat Assistant Button */}
-      <div className="fixed bottom-5 right-5 z-40 flex items-center gap-2">
+      <div className="fixed bottom-24 right-4 z-40 flex items-center gap-2">
         {showChatMsg && (
           <span className="bg-zinc-950 text-white text-xs px-3.5 py-1.5 rounded-full shadow-xl animate-fade-in whitespace-nowrap border border-zinc-800">
             HBT Chat Support
