@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { db, schema } from '@/db';
 import { requireStaff } from '@/lib/server/guard';
 import { changeOrderStatus, OrderError, reviewPayment } from '@/lib/server/orders';
-import { buildOrderText, dispatchOrderNotification } from '@/lib/server/notify';
+import { buildOrderText, dispatchOrderNotification, whatsappConfigured } from '@/lib/server/notify';
 import { ORDER_STATUSES } from '@/lib/orderStatus';
 
 export const dynamic = 'force-dynamic';
@@ -22,7 +22,7 @@ export async function GET(request, { params }) {
   const { trackingToken, ...safe } = order;
   const canSeeMoney = g.staff.role !== 'kitchen';
   return NextResponse.json({
-    order: { ...safe, items, history, payments: canSeeMoney ? payments : [], notification: notification || null, waText: await buildOrderText(id) },
+    order: { ...safe, items, history, payments: canSeeMoney ? payments : [], notification: notification || null, whatsappConfigured: whatsappConfigured(), waText: await buildOrderText(id) },
   });
 }
 
@@ -49,6 +49,7 @@ export async function PATCH(request, { params }) {
       const o = await reviewPayment(id, body.decision, g.staff, body.notes);
       return NextResponse.json({ success: true, status: o.status, paymentStatus: o.paymentStatus });
     }
+    if (!whatsappConfigured()) return NextResponse.json({ error: 'Automatic WhatsApp alerts are not set up. Use "Share on WhatsApp" instead.' }, { status: 409 });
     await dispatchOrderNotification(id, { force: true });
     const [n] = await db.select().from(schema.notifications).where(eq(schema.notifications.orderId, id));
     return NextResponse.json({ success: true, notification: n });

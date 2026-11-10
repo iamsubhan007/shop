@@ -43,8 +43,28 @@ export function nextStatuses(from, orderType) {
   return map[from] || [];
 }
 
+/**
+ * Once an order is placed, staff (owner, admin and kitchen) can never cancel or reject it: only the customer can
+ * cancel it, and only until it has been accepted (see CUSTOMER_CANCELLABLE). Staff accept it and then fulfil it.
+ */
+export const STAFF_NEVER_ENDS = ['Cancelled', 'Rejected'];
+
+/**
+ * Orders that are waiting to be accepted. These raise the alarm in the staff portal until someone accepts them
+ * or the customer cancels. 'Payment Pending' (a prepaid order the customer has not paid yet) is deliberately left
+ * out: nobody on staff can act on it, and since staff cannot cancel it, it would ring forever if abandoned.
+ * It starts ringing as soon as the customer submits payment ('Payment Verification').
+ * Kitchen only hears orders it can accept itself; payment checks belong to owner/admin.
+ */
+export const NEEDS_ACCEPTANCE = {
+  owner: ['Placed', 'Payment Verification'],
+  admin: ['Placed', 'Payment Verification'],
+  kitchen: ['Placed'],
+};
+
 /** Which transitions each staff role may perform. Kitchen only handles cooking/dispatch steps. */
 export function roleCanTransition(role, from, to) {
+  if (STAFF_NEVER_ENDS.includes(to)) return false;
   if (role === 'owner' || role === 'admin') return true;
   if (role === 'kitchen') {
     return (from === 'Placed' && to === 'Confirmed') || // COD only: prepaid is blocked until payment is verified

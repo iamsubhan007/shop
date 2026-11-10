@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import NewOrderAlert from '@/components/admin/NewOrderAlert';
 import { BarChart3, ChefHat, DatabaseBackup, LayoutDashboard, LogOut, Menu as MenuIcon, Receipt, Settings, Tag, UserCog, UtensilsCrossed, Users, X } from 'lucide-react';
 
 const NAV = [
@@ -72,6 +73,7 @@ export default function AdminShell({ user, children }) {
         </header>
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 print:overflow-visible">{children}</main>
       </div>
+      <NewOrderAlert role={user.role} />
     </div>
   );
 }

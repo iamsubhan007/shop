@@ -82,6 +82,9 @@ async function sendPdf(to, orderId, orderNumber, signal) {
  * a row already 'sent' is skipped. Failures are recorded and never affect the order.
  */
 export async function dispatchOrderNotification(orderId, { force = false } = {}) {
+  // Automatic WhatsApp alerts are optional. Without the Cloud API credentials there is nothing to send, so do nothing:
+  // no failed rows and no red errors in the portal. The portal offers "Share on WhatsApp" / "Copy order text" instead.
+  if (!whatsappConfigured()) return;
   try {
     const [n] = await db
       .insert(notifications)
@@ -90,10 +93,6 @@ export async function dispatchOrderNotification(orderId, { force = false } = {})
       .returning();
     if (n.status === 'sent' && !force) return n;
 
-    if (!whatsappConfigured()) {
-      await db.update(notifications).set({ status: 'failed', lastError: 'WhatsApp Cloud API is not configured (WHATSAPP_TOKEN / WHATSAPP_PHONE_NUMBER_ID).', attempts: n.attempts + 1 }).where(eq(notifications.id, n.id));
-      return;
-    }
     const settings = await getSettings();
     const to = (process.env.OWNER_WHATSAPP || settings.shop.whatsapp || '').replace(/\D/g, '');
     if (!to) throw new Error('Owner WhatsApp number missing');

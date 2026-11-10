@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Volume2, VolumeX } from 'lucide-react';
 import { api, ago } from '@/components/admin/api';
 
 const COLS = [
@@ -14,23 +13,11 @@ const COLS = [
 export default function Kitchen() {
   const [orders, setOrders] = useState([]);
   const [err, setErr] = useState('');
-  const [sound, setSound] = useState(false);
   const [, tick] = useState(0);
   const known = useRef(null);
-  const ctx = useRef(null);
   const [fresh, setFresh] = useState(new Set());
 
-  useEffect(() => { try { setSound(localStorage.getItem('hbt_kds_sound') === '1'); } catch {} }, []);
-
-  const beep = useCallback(() => {
-    try {
-      ctx.current ||= new (window.AudioContext || window.webkitAudioContext)();
-      const o = ctx.current.createOscillator(); const g = ctx.current.createGain();
-      o.connect(g); g.connect(ctx.current.destination); o.frequency.value = 880; g.gain.value = 0.2;
-      o.start(); o.stop(ctx.current.currentTime + 0.35);
-    } catch {}
-  }, []);
-
+  // The looping new-order alarm lives in the admin shell (NewOrderAlert), so this page no longer plays its own beep.
   const load = useCallback(async () => {
     try {
       const d = await api('/api/admin/kitchen');
@@ -39,16 +26,14 @@ export default function Kitchen() {
       const ids = new Set(d.orders.map((o) => o.id));
       if (known.current) {
         const added = [...ids].filter((i) => !known.current.has(i));
-        if (added.length) { setFresh((p) => new Set([...p, ...added])); if (sound) beep(); }
+        if (added.length) setFresh((p) => new Set([...p, ...added]));
       }
       known.current = ids;
     } catch (e) { setErr(e.message); }
-  }, [sound, beep]);
+  }, []);
 
   useEffect(() => { load(); const t = setInterval(load, 8000); return () => clearInterval(t); }, [load]);
   useEffect(() => { const t = setInterval(() => tick((n) => n + 1), 30000); return () => clearInterval(t); }, []);
-
-  const toggleSound = () => { const v = !sound; setSound(v); try { localStorage.setItem('hbt_kds_sound', v ? '1' : '0'); } catch {} if (v) beep(); };
 
   const move = async (o, to) => {
     const status = to === 'READY' ? (o.orderType === 'pickup' ? 'Ready for Pickup' : 'Out for Delivery') : to;
@@ -60,12 +45,7 @@ export default function Kitchen() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-black">Kitchen</h1>
-        <button onClick={toggleSound} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border bg-white text-sm font-semibold" aria-pressed={sound}>
-          {sound ? <Volume2 size={18} /> : <VolumeX size={18} />} Sound {sound ? 'on' : 'off'}
-        </button>
-      </div>
+      <h1 className="text-2xl font-black mb-4">Kitchen</h1>
       {err && <p role="alert" className="text-red-700 text-sm mb-3">{err}</p>}
       <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
         {COLS.map((c) => {

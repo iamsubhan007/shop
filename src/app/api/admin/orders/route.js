@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { and, desc, eq, gte, ilike, inArray, lt, or, sql } from 'drizzle-orm';
 import { db, schema } from '@/db';
 import { requireStaff } from '@/lib/server/guard';
+import { whatsappConfigured } from '@/lib/server/notify';
 
 export const dynamic = 'force-dynamic';
 const { orders, orderItems, notifications } = schema;
@@ -37,7 +38,8 @@ export async function GET(request) {
       ...o,
       subtotal: Number(o.subtotal), deliveryFee: Number(o.deliveryFee), discountAmount: Number(o.discountAmount), totalAmount: Number(o.totalAmount),
       trackingToken: undefined,
-      notification: notifs.find((x) => x.orderId === o.id)?.status || null,
+      // Only meaningful when automatic WhatsApp alerts are set up; otherwise hide it so no failure is shown.
+      notification: whatsappConfigured() ? notifs.find((x) => x.orderId === o.id)?.status || null : null,
       items: items.filter((i) => i.orderId === o.id).map((i) => ({ title: i.itemTitle, quantity: i.quantity, notes: i.notes, unitPrice: Number(i.unitPrice) })),
     })),
   });

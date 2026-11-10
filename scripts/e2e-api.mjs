@@ -279,6 +279,95 @@ check('old price must exceed selling price', r.status === 400);
 await staff.req('PATCH', `/api/admin/products/${prod.id}`, { price: prod.price });
 const priceAudit = await sql`select 1 from audit_logs where action='product.price' and entity_id=${prod.id}`;
 check('price change audited', priceAudit.length >= 1);
+
+// ---- new-order alarm + "staff never cancel" (owner / admin / kitchen portals)
+const adminEmail = `admin${Date.now()}@example.com`;
+await sql`insert into profiles (email, full_name, role) values (${adminEmail}, 'Admin', 'admin')`;
+const adminC = new Client();
+r = await staffLogin(adminC, adminEmail);
+check('admin login ok (for alarm tests)', r.status === 200, JSON.stringify(r.json));
+
+r = await anon.req('GET', '/api/admin/alerts');
+check('alerts: anonymous rejected', r.status === 403);
+r = await cust.req('GET', '/api/admin/alerts');
+check('alerts: customer session rejected', r.status === 403);
+
+const delivery = { ...base, orderType: 'delivery', paymentMethod: 'cod', deliveryAddress: 'House 1, N Block', deliveryLat: S.lat + 0.0085, deliveryLng: S.lng };
+const idsOf = (res) => (res.json?.orders || []).map((o) => o.id);
+const cod2 = (await cust.req('POST', '/api/checkout', { ...delivery, idempotencyKey: 'alarm-a-' + Date.now() })).json;
+const prepaid2 = (await cust.req('POST', '/api/checkout', { ...base, orderType: 'pickup', paymentMethod: 'bank_transfer' })).json;
+check('alarm setup: COD order is Placed, prepaid is Payment Pending', cod2.status === 'Placed' && prepaid2.status === 'Payment Pending', `${cod2.status} / ${prepaid2.status}`);
+
+let aOwner = await staff.req('GET', '/api/admin/alerts');
+let aAdmin = await adminC.req('GET', '/api/admin/alerts');
+let aKitchen = await kitchen.req('GET', '/api/admin/alerts');
+check('alarm: owner, admin and kitchen all see a new COD order', [aOwner, aAdmin, aKitchen].every((x) => x.status === 200 && idsOf(x).includes(cod2.orderId)));
+check('alarm: COD order can be accepted straight away', aOwner.json.orders.find((o) => o.id === cod2.orderId)?.canAccept === true);
+check('alarm: unpaid prepaid order does NOT ring (nobody can act on it yet)', !idsOf(aOwner).includes(prepaid2.orderId) && !idsOf(aKitchen).includes(prepaid2.orderId));
+check('alarm: kitchen gets no money fields', aKitchen.json.orders.every((o) => o.totalAmount === undefined && o.paymentMethod === undefined));
+check('alarm: owner and admin get the total', typeof aOwner.json.orders.find((o) => o.id === cod2.orderId)?.totalAmount === 'number' && typeof aAdmin.json.orders[0]?.totalAmount === 'number');
+check('alarm: count is reported', aOwner.json.count >= 1);
+
+// once the customer pays, the prepaid order rings for owner/admin only (kitchen cannot verify payments)
+r = await cust.req('POST', `/api/orders/${prepaid2.orderId}/payment`, { reference: 'ALARM123' });
+aOwner = await staff.req('GET', '/api/admin/alerts'); aKitchen = await kitchen.req('GET', '/api/admin/alerts');
+const pv = aOwner.json.orders?.find((o) => o.id === prepaid2.orderId);
+check('alarm: prepaid order rings once payment is submitted (owner), but cannot be accepted yet', r.status === 200 && !!pv && pv.canAccept === false, JSON.stringify(pv));
+check('alarm: kitchen does not hear payment-check orders', !idsOf(aKitchen).includes(prepaid2.orderId));
+
+// staff can never cancel or reject, in any role, at any stage
+for (const [who, client] of [['owner', staff], ['admin', adminC], ['kitchen', kitchen]]) {
+  for (const st of ['Cancelled', 'Rejected']) {
+    r = await client.req('PATCH', `/api/admin/orders/${cod2.orderId}`, { action: 'status', status: st, note: 'no' });
+    check(`${who} cannot ${st === 'Cancelled' ? 'cancel' : 'reject'} a placed order`, r.status === 403, `${r.status} ${JSON.stringify(r.json)}`);
+  }
+}
+r = await staff.req('PATCH', `/api/admin/orders/${prepaid2.orderId}`, { action: 'status', status: 'Cancelled', note: 'no' });
+check('owner cannot cancel an order that is waiting for payment check', r.status === 403);
+const [{ status: stillPlaced }] = await sql`select status from orders where id = ${cod2.orderId}`;
+aOwner = await staff.req('GET', '/api/admin/alerts');
+check('the alarm keeps ringing after those blocked attempts', stillPlaced === 'Placed' && idsOf(aOwner).includes(cod2.orderId));
+
+// accepting stops it (kitchen accepts the COD order)
+r = await kitchen.req('PATCH', `/api/admin/orders/${cod2.orderId}`, { action: 'status', status: 'Confirmed' });
+aOwner = await staff.req('GET', '/api/admin/alerts'); aKitchen = await kitchen.req('GET', '/api/admin/alerts');
+check('kitchen accepting the order stops its alarm for everyone', r.status === 200 && !idsOf(aOwner).includes(cod2.orderId) && !idsOf(aKitchen).includes(cod2.orderId));
+r = await staff.req('PATCH', `/api/admin/orders/${cod2.orderId}`, { action: 'status', status: 'Cancelled', note: 'no' });
+check('after acceptance, staff still cannot cancel', r.status === 403);
+r = await cust.req('POST', `/api/orders/${cod2.orderId}/cancel`, {});
+check('after acceptance the customer cannot cancel online either', r.status === 409);
+
+// the customer cancelling stops it
+r = await cust.req('POST', `/api/orders/${prepaid2.orderId}/cancel`, {});
+aOwner = await staff.req('GET', '/api/admin/alerts');
+check('customer cancelling stops the alarm', r.status === 200 && !idsOf(aOwner).includes(prepaid2.orderId));
+const cod3 = (await cust.req('POST', '/api/checkout', { ...delivery, idempotencyKey: 'alarm-b-' + Date.now() })).json;
+aAdmin = await adminC.req('GET', '/api/admin/alerts');
+check('a second new order rings again', idsOf(aAdmin).includes(cod3.orderId));
+r = await cust.req('POST', `/api/orders/${cod3.orderId}/cancel`, {});
+aAdmin = await adminC.req('GET', '/api/admin/alerts');
+check('customer cancelling a COD order stops its alarm', r.status === 200 && !idsOf(aAdmin).includes(cod3.orderId));
+
+// prepaid: the office verifying the payment is the "accept" and it stops the alarm
+const prepaid3 = (await cust.req('POST', '/api/checkout', { ...base, orderType: 'pickup', paymentMethod: 'bank_transfer' })).json;
+await cust.req('POST', `/api/orders/${prepaid3.orderId}/payment`, { reference: 'ALARM456' });
+aOwner = await staff.req('GET', '/api/admin/alerts');
+check('alarm: second prepaid order rings after payment submitted', idsOf(aOwner).includes(prepaid3.orderId));
+r = await staff.req('PATCH', `/api/admin/orders/${prepaid3.orderId}`, { action: 'payment', decision: 'verify' });
+aOwner = await staff.req('GET', '/api/admin/alerts');
+check('verifying the payment (accepting) stops the alarm', r.status === 200 && r.json.status === 'Confirmed' && !idsOf(aOwner).includes(prepaid3.orderId));
+
+// WhatsApp: not set up in this test environment, so no failure is recorded or shown
+await new Promise((x) => setTimeout(x, 1500)); // checkout dispatches notifications in the background
+const wa = await sql`select status, last_error from notifications where order_id = ${cod2.orderId}`;
+check('WhatsApp not configured: no "failed" notification is recorded', wa.every((n) => n.status !== 'failed' && !n.last_error), JSON.stringify(wa));
+r = await staff.req('GET', `/api/admin/orders/${cod2.orderId}`);
+check('WhatsApp not configured: order detail says so and offers the order text', r.status === 200 && r.json.order.whatsappConfigured === false && /NEW ORDER/.test(r.json.order.waText));
+r = await staff.req('GET', '/api/admin/orders');
+check('WhatsApp not configured: order list shows no WhatsApp status', r.status === 200 && r.json.orders.every((o) => o.notification === null));
+r = await staff.req('PATCH', `/api/admin/orders/${cod2.orderId}`, { action: 'retry_notification' });
+check('WhatsApp not configured: retry is refused with a clear message', r.status === 409 && /not set up/i.test(r.json.error || ''));
+await sql`update profiles set is_active=false where email=${adminEmail}`;
 await sql`update profiles set is_active=false where email=${kEmail}`;
 console.log(`\n${pass} passed, ${fail} failed`);
 await sql`update shop_settings set value=${sql.json(origPay.value)} where key='payment'`;

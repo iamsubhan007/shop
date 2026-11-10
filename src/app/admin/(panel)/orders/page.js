@@ -1,9 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Loader2, Printer, Search, X } from 'lucide-react';
 import { api, rs, when, ago } from '@/components/admin/api';
-import { ORDER_STATUSES, PAYMENT_LABELS, nextStatuses, statusColor } from '@/lib/orderStatus';
+import { ORDER_STATUSES, PAYMENT_LABELS, nextStatuses, roleCanTransition, statusColor } from '@/lib/orderStatus';
 
 const sel = 'border border-zinc-300 rounded-lg px-2.5 py-2 text-sm bg-white';
 
@@ -15,6 +16,11 @@ export default function OrdersAdmin() {
   const [openId, setOpenId] = useState(null);
   const [fresh, setFresh] = useState(new Set());
   const seen = useRef(null);
+
+  // The new-order alert links here with ?open=<order id>.
+  const searchParams = useSearchParams();
+  const openFromLink = searchParams.get('open');
+  useEffect(() => { if (openFromLink) setOpenId(openFromLink); }, [openFromLink]);
 
   const load = useCallback(async () => {
     try {
@@ -98,7 +104,10 @@ function Detail({ id, onClose }) {
   };
 
   if (!o) return <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center"><Loader2 className="animate-spin text-white" /></div>;
-  const next = nextStatuses(o.status, o.orderType).filter((s) => !(s === 'Confirmed' && o.paymentMethod !== 'cod' && o.paymentStatus !== 'verified'));
+  // Staff can accept and fulfil an order but never cancel or reject it (only the customer can cancel, before acceptance).
+  const next = nextStatuses(o.status, o.orderType)
+    .filter((s) => roleCanTransition('admin', o.status, s))
+    .filter((s) => !(s === 'Confirmed' && o.paymentMethod !== 'cod' && o.paymentStatus !== 'verified'));
   const proof = o.paymentProofUrl;
   const phoneIntl = `92${o.customerPhone.replace(/^0/, '')}`;
 
@@ -156,22 +165,29 @@ function Detail({ id, onClose }) {
         {next.length > 0 && (
           <section className="print:hidden">
             <h3 className="text-xs font-bold text-zinc-500 mb-2">MOVE ORDER TO</h3>
-            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note / reason (optional, required for cancel)" className="w-full border rounded-lg px-3 py-2 text-sm mb-2" />
+            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" className="w-full border rounded-lg px-3 py-2 text-sm mb-2" />
             <div className="flex flex-wrap gap-2">
-              {next.map((s) => {
-                const bad = s === 'Cancelled' || s === 'Rejected';
-                return <button key={s} disabled={busy} onClick={() => { if (bad && !note.trim()) return setErr('Please write a reason in the note box.'); act({ action: 'status', status: s, note: note || undefined }, bad ? `Really ${s.toLowerCase()} this order?` : null); }}
-                  className={`px-4 py-2.5 rounded-xl text-sm font-bold ${bad ? 'bg-white border border-red-300 text-red-700' : 'bg-red-700 text-white'}`}>{s}</button>;
-              })}
+              {next.map((s) => (
+                <button key={s} disabled={busy} onClick={() => act({ action: 'status', status: s, note: note || undefined })}
+                  className="px-4 py-2.5 rounded-xl text-sm font-bold bg-red-700 text-white">{s === 'Confirmed' ? 'Accept order' : s}</button>
+              ))}
             </div>
+            <p className="text-[11px] text-zinc-400 mt-2">Once an order is placed it cannot be cancelled by the shop. Only the customer can cancel it, before it is accepted.</p>
           </section>
         )}
 
         <section className="text-xs bg-zinc-50 rounded-xl p-3 print:hidden">
-          <div className="font-bold mb-1">Owner WhatsApp notification: {o.notification?.status || 'none'}</div>
-          {o.notification?.lastError && <div className="text-red-700 mb-1">{o.notification.lastError}</div>}
-          <div className="flex gap-2">
-            <button disabled={busy} onClick={() => act({ action: 'retry_notification' })} className="px-3 py-1.5 border rounded-lg bg-white">Retry sending</button>
+          {o.whatsappConfigured ? (
+            <>
+              <div className="font-bold mb-1">Owner WhatsApp notification: {o.notification?.status || 'none'}</div>
+              {o.notification?.lastError && <div className="text-red-700 mb-1">{o.notification.lastError}</div>}
+            </>
+          ) : (
+            <div className="text-zinc-500 mb-2">Automatic WhatsApp alerts are off. To pass this order on yourself, share it or copy the text.</div>
+          )}
+          <div className="flex flex-wrap gap-2">
+            {o.whatsappConfigured && <button disabled={busy} onClick={() => act({ action: 'retry_notification' })} className="px-3 py-1.5 border rounded-lg bg-white">Retry sending</button>}
+            <a href={`https://wa.me/?text=${encodeURIComponent(o.waText)}`} target="_blank" rel="noreferrer" className="px-3 py-1.5 border rounded-lg bg-emerald-600 text-white font-semibold">Share on WhatsApp</a>
             <button onClick={() => { navigator.clipboard.writeText(o.waText); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="px-3 py-1.5 border rounded-lg bg-white">{copied ? 'Copied ✓' : 'Copy order text'}</button>
           </div>
         </section>
