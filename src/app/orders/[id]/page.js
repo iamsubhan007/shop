@@ -7,6 +7,7 @@ import { CheckCircle2, Circle, Loader2, MessageCircle, Upload, XCircle } from 'l
 import { useSite } from '@/context/SiteContext';
 import { useAuth } from '@/context/AuthContext';
 import { CUSTOMER_CANCELLABLE, PAYMENT_LABELS, statusColor, timelineSteps } from '@/lib/orderStatus';
+import { prepareImage } from '@/lib/compressImage';
 
 const fmt = (d) => new Date(d).toLocaleString('en-PK', { timeZone: 'Asia/Karachi', dateStyle: 'medium', timeStyle: 'short' });
 
@@ -38,12 +39,18 @@ function OrderView() {
   }, [load]);
 
   const upload = async (f) => {
-    const fd = new FormData();
-    fd.append('file', f);
-    const res = await fetch('/api/upload/proof', { method: 'POST', body: fd });
-    const j = await res.json().catch(() => ({}));
-    if (!res.ok) return setMsg(j.error || 'Upload failed.');
-    setFile(j.file);
+    try {
+      const fd = new FormData();
+      fd.append('file', await prepareImage(f)); // big screenshots are shrunk first so they upload reliably
+      const res = await fetch('/api/upload/proof', { method: 'POST', body: fd });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return setMsg(j.error || (res.status === 413 ? 'That image is too large. Please choose a smaller screenshot.' : 'Upload failed. Please try again, or enter the transaction ID instead.'));
+      }
+      setFile(j.file);
+    } catch {
+      setMsg('Upload failed. Check your connection and try again, or enter the transaction ID instead.');
+    }
   };
 
   const submitPayment = async () => {

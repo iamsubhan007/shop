@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, Loader2, Plus, Search, Trash2, X } from 'lucide-react';
 import { api, rs } from '@/components/admin/api';
+import { prepareImage } from '@/lib/compressImage';
 
 const field = 'w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm';
 
@@ -98,11 +99,13 @@ function ProductForm({ product, cats, onClose, onSaved }) {
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
 
   const upload = async (file) => {
-    const fd = new FormData(); fd.append('file', file);
-    const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
-    const j = await res.json().catch(() => ({}));
-    if (!res.ok) return setErr(j.error || 'Upload failed');
-    set('imageUrl', j.url);
+    try {
+      const fd = new FormData(); fd.append('file', await prepareImage(file));
+      const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) return setErr(j.error || (res.status === 413 ? 'That image is too large. Please choose a smaller one.' : 'Upload failed. Please try again.'));
+      set('imageUrl', j.url);
+    } catch { setErr('Upload failed. Check the connection and try again.'); }
   };
 
   const save = async (e) => {

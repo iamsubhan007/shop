@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useSite } from '@/context/SiteContext';
 import LocationRadiusChecker from '@/components/delivery/LocationRadiusChecker';
 import { PAYMENT_LABELS, PAYMENT_METHODS } from '@/lib/orderStatus';
+import { prepareImage } from '@/lib/compressImage';
 
 const ICONS = { bank_transfer: Landmark, jazzcash: Wallet, easypaisa: Wallet, cod: Banknote };
 
@@ -69,13 +70,20 @@ export default function CheckoutPage() {
     if (!file) return;
     setUploading(true);
     setError('');
-    const fd = new FormData();
-    fd.append('file', file);
-    const res = await fetch('/api/upload/proof', { method: 'POST', body: fd });
-    const j = await res.json().catch(() => ({}));
-    setUploading(false);
-    if (!res.ok) return setError(j.error || 'Upload failed.');
-    setProofFile(j.file);
+    try {
+      const fd = new FormData();
+      fd.append('file', await prepareImage(file)); // big screenshots are shrunk first so they upload reliably
+      const res = await fetch('/api/upload/proof', { method: 'POST', body: fd });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return setError(j.error || (res.status === 413 ? 'That image is too large. Please choose a smaller screenshot.' : 'Upload failed. Please try again, or enter the transaction ID instead.'));
+      }
+      setProofFile(j.file);
+    } catch {
+      setError('Upload failed. Check your connection and try again, or enter the transaction ID instead.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const applyCoupon = async () => {

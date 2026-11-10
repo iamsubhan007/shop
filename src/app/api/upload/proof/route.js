@@ -11,6 +11,6 @@ export async function POST(request) {
   if (!rl.ok) return NextResponse.json({ error: 'Too many uploads. Try again later.' }, { status: 429 });
   const form = await request.formData().catch(() => null);
   const res = await saveImage(form?.get('file'), 'proofs');
-  if (res.error) return NextResponse.json({ error: res.error }, { status: 400 });
+  if (res.error) return NextResponse.json({ error: res.error }, { status: res.status || 400 });
   return NextResponse.json({ success: true, file: res.name });
 }
