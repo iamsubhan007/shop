@@ -3,7 +3,14 @@ import { getStaff } from '@/lib/server/auth';
 import AdminShell from '@/components/admin/AdminShell';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'HBT Admin', robots: { index: false, follow: false } };
+// The manifest lets owner/admin/kitchen install the portal on a phone (needed for push on iPhone).
+export const metadata = {
+  title: 'HBT Admin',
+  robots: { index: false, follow: false },
+  manifest: '/admin.webmanifest',
+  icons: { apple: '/icons/apple-touch-icon.png' },
+  appleWebApp: { capable: true, title: 'HBT Admin', statusBarStyle: 'black-translucent' },
+};
 
 // Server-side guard: nothing under /admin renders without a valid staff session.
 export default async function PanelLayout({ children }) {

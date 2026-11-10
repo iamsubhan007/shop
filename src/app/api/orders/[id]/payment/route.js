@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { z } from 'zod';
 import { getCustomer } from '@/lib/server/auth';
 import { OrderError, submitPayment } from '@/lib/server/orders';
+import { notifyStaffOfOrder } from '@/lib/server/push';
 
 const schema = z.object({
   reference: z.string().trim().max(100).optional().nullable(),
@@ -16,6 +17,7 @@ export async function POST(request, { params }) {
   if (!parsed.success) return NextResponse.json({ error: 'Invalid payment details.' }, { status: 400 });
   try {
     await submitPayment(id, customer, parsed.data);
+    after(() => notifyStaffOfOrder(id)); // the order now needs a payment check: push to owner/admin
     return NextResponse.json({ success: true });
   } catch (e) {
     if (e instanceof OrderError) return NextResponse.json({ error: e.message }, { status: e.status });

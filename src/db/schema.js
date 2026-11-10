@@ -331,3 +331,17 @@ export const backups = pgTable('backups', {
   trigger: text('trigger').notNull(), // manual | scheduled
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
+
+// Browsers/phones that opted in to push notifications for new orders (owner / admin / kitchen only).
+// One row per device (endpoint is unique). Recipients are chosen by the profile's CURRENT role when sending, so
+// removing someone's staff access also stops their alerts. Not part of backups: a subscription is tied to a device.
+export const pushSubscriptions = pgTable('push_subscriptions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  profileId: uuid('profile_id').references(() => profiles.id, { onDelete: 'cascade' }).notNull(),
+  endpoint: text('endpoint').unique().notNull(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).defaultNow().notNull(),
+});

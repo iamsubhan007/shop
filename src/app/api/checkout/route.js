@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getCustomer, normalizePkPhone, rateLimit } from '@/lib/server/auth';
 import { createOrder, OrderError } from '@/lib/server/orders';
 import { dispatchOrderNotification } from '@/lib/server/notify';
+import { notifyStaffOfOrder } from '@/lib/server/push';
 import { after } from 'next/server';
 
 const schema = z.object({
@@ -36,7 +37,11 @@ export async function POST(request) {
 
   try {
     const { order, duplicate } = await createOrder({ ...data, customerPhone: phone }, customer);
-    if (!duplicate) after(() => dispatchOrderNotification(order.id)); // never blocks or fails the order
+    if (!duplicate) {
+      // Neither of these blocks or fails the order.
+      after(() => dispatchOrderNotification(order.id)); // optional WhatsApp message (only if configured)
+      after(() => notifyStaffOfOrder(order.id)); // push notification to subscribed owner/admin/kitchen devices
+    }
     return NextResponse.json({
       success: true,
       duplicate,
