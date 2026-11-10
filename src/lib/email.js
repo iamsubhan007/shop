@@ -1,5 +1,7 @@
 import 'server-only';
 import nodemailer from 'nodemailer';
+import { buildOtpEmail } from './otpEmail';
+import { resolveFrom } from './mailFrom';
 
 let transporter;
 function getTransporter() {
@@ -19,21 +21,32 @@ function getTransporter() {
 
 export const isEmailConfigured = () => !!getTransporter();
 
+let warnedFrom = false;
+function fromHeader() {
+  const { name, address, rewritten } = resolveFrom({ user: process.env.SMTP_USER, host: process.env.SMTP_HOST, from: process.env.SMTP_FROM });
+  if (rewritten && !warnedFrom) {
+    warnedFrom = true;
+    console.warn('SMTP_FROM address differs from SMTP_USER; Gmail only sends as the logged-in account, so SMTP_USER is used as the sender.');
+  }
+  return { name, address };
+}
+
 /** Sends a sign-in code by SMTP. The code is never returned or logged. Returns { ok, reason }. */
 export async function sendLoginOtp(email, code, purpose = 'customer') {
   const t = getTransporter();
   if (!t) return { ok: false, reason: 'email_not_configured' };
-  const from = process.env.SMTP_FROM || `"Haq Bahu Tandoor" <${process.env.SMTP_USER}>`;
-  const label = purpose === 'staff' ? 'staff sign-in code' : 'sign-in code';
-  const html = `<div style="font-family:Arial,sans-serif;max-width:440px;margin:auto;border:1px solid #e5e0d8;border-radius:12px;overflow:hidden">
-    <div style="background:#2b1d14;color:#f6efe4;padding:18px;text-align:center;font-weight:700;font-size:18px">Haq Bahu Tandoor</div>
-    <div style="padding:24px;text-align:center;color:#2b1d14">
-      <p style="margin:0 0 12px">Your ${label} is</p>
-      <div style="font-size:34px;letter-spacing:8px;font-weight:800;color:#b4451f">${code}</div>
-      <p style="font-size:12px;color:#6b5d52;margin:16px 0 0">It expires in 10 minutes. If you didn't request it, ignore this email.</p>
-    </div></div>`;
+  const { subject, text, html } = buildOtpEmail({ code, purpose });
   try {
-    await t.sendMail({ from, to: email, subject: `Your Haq Bahu Tandoor ${label}`, html, text: `Your ${label} is ${code}. It expires in 10 minutes.` });
+    await t.sendMail({
+      from: fromHeader(),
+      to: email,
+      subject,
+      text,
+      html,
+      // Marks it as an automatic transactional message (RFC 3834) and stops out-of-office replies. No bulk or
+      // unsubscribe headers on purpose: those make a one-off sign-in code look like marketing mail.
+      headers: { 'Auto-Submitted': 'auto-generated', 'X-Auto-Response-Suppress': 'OOF, AutoReply' },
+    });
     return { ok: true };
   } catch (err) {
     console.error('SMTP send failed:', err.code || err.message);
