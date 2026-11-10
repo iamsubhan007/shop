@@ -51,11 +51,11 @@ export default function AdminLogin() {
         <div className="text-center">
           <div className="mx-auto w-12 h-12 rounded-2xl bg-red-700 text-white flex items-center justify-center mb-3"><Lock size={20} /></div>
           <h1 className="text-lg font-black">HBT Staff Sign in</h1>
-          <p className="text-xs text-zinc-500 mt-1">{step === 'email' ? 'We email a one-time code to your staff address.' : `Code sent to ${email} (if it is a staff account).`}</p>
+          <p className="text-xs text-zinc-500 mt-1">{step === 'email' ? 'We email a one-time code to your staff address.' : `Code sent to ${email}.`}</p>
         </div>
         {error && <div role="alert" className="text-xs rounded-xl bg-red-50 border border-red-200 text-red-700 px-3 py-2.5">{error}</div>}
         {step === 'email' ? (
-          <input type="email" required autoComplete="username" placeholder="Staff email" value={email} onChange={(e) => setEmail(e.target.value)} className={input} />
+          <input type="email" required autoComplete="username" placeholder="Staff email" value={email} onChange={(e) => { setEmail(e.target.value); setError(''); }} className={input} />
         ) : (
           <>
             <input inputMode="numeric" autoComplete="one-time-code" maxLength={6} required autoFocus value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} aria-label="6-digit code" placeholder="••••••" className={`${input} text-center text-2xl tracking-[0.5em] font-bold`} />

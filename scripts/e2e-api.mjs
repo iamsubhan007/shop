@@ -143,8 +143,10 @@ async function staffLogin(client, em) {
   const code = await sink.codeFor(em);
   return client.req('POST', '/api/auth/staff/otp/verify', { email: em, code: code || '000000' });
 }
+const mailsBefore = sink.count();
 r = await staff.req('POST', '/api/auth/staff/otp/request', { email: email });
-check('staff OTP request gives no hint whether email is staff', r.status === 200 && r.json.success === true);
+const [{ n: staffOtpRows }] = await sql`select count(*)::int n from otp_codes where email = ${'staff:' + email}`;
+check('non-staff email is rejected with a clear message, no code issued or emailed', r.status === 403 && r.json.code === 'not_staff' && /not registered as staff/i.test(r.json.error || '') && staffOtpRows === 0 && sink.count() === mailsBefore, JSON.stringify(r.json));
 r = await staff.req('POST', '/api/auth/staff/otp/verify', { email: email, code: '123456' });
 check('customer email cannot staff-login', r.status === 400);
 r = await staff.req('POST', '/api/auth/staff/otp/request', { email: OWNER });
@@ -155,6 +157,52 @@ r = await staffLogin(staff, OWNER);
 check('owner login via emailed code ok', r.status === 200 && !!staff.jar.hbt_staff, JSON.stringify(r.json));
 r = await cust.req('GET', '/api/auth/me?scope=staff');
 check('customer session is not a staff session', r.json.user === null);
+
+// ---- staff management (owner only): add by email, sign in with an emailed code, change role, remove
+const newStaff = `newstaff${Date.now()}@example.com`;
+r = await staff.req('POST', '/api/admin/staff', { email: newStaff, fullName: 'New Admin', role: 'admin' });
+check('owner can add a staff email', r.status === 201 && r.json.staff.role === 'admin' && r.json.staff.email === newStaff, JSON.stringify(r.json));
+r = await staff.req('POST', '/api/admin/staff', { email: newStaff.toUpperCase(), role: 'admin' });
+check('adding the same email again is rejected (409, case-insensitive)', r.status === 409, JSON.stringify(r.json));
+r = await staff.req('POST', '/api/admin/staff', { email: 'not-an-email', role: 'admin' });
+check('invalid staff email rejected', r.status === 400);
+r = await staff.req('POST', '/api/admin/staff', { email: `x${Date.now()}@example.com`, role: 'owner' });
+check('cannot grant the owner role from the panel', r.status === 400);
+const newClient = new Client();
+r = await staffLogin(newClient, newStaff);
+check('added staff signs in with an emailed code', r.status === 200 && r.json.user?.role === 'admin' && !!newClient.jar.hbt_staff, JSON.stringify(r.json));
+r = await newClient.req('GET', '/api/admin/staff');
+check('admin role cannot list staff (owner only)', r.status === 403);
+r = await newClient.req('POST', '/api/admin/staff', { email: `y${Date.now()}@example.com`, role: 'admin' });
+check('admin role cannot add staff', r.status === 403);
+r = await newClient.req('GET', '/api/admin/stats');
+check('added admin can use the admin API', r.status === 200);
+const staffList = await staff.req('GET', '/api/admin/staff');
+const newRow = staffList.json.staff?.find((s) => s.email === newStaff);
+const ownerRow = staffList.json.staff?.find((s) => s.role === 'owner');
+check('owner sees the new member and the owner in the list', staffList.status === 200 && !!newRow && !!ownerRow);
+r = await staff.req('PATCH', `/api/admin/staff/${newRow.id}`, { role: 'kitchen' });
+check('owner can change role to kitchen', r.status === 200 && r.json.staff.role === 'kitchen');
+r = await newClient.req('GET', '/api/admin/stats');
+check('role change applies immediately (kitchen loses the dashboard)', r.status === 403);
+r = await staff.req('PATCH', `/api/admin/staff/${ownerRow.id}`, { role: 'kitchen' });
+check('owner account cannot be changed', r.status === 400);
+r = await staff.req('DELETE', `/api/admin/staff/${ownerRow.id}`);
+check('owner cannot remove their own access', r.status === 400);
+const [custProfile] = await sql`select id from profiles where email = ${email}`;
+r = await staff.req('POST', '/api/admin/staff', { email, role: 'kitchen' });
+check('an existing customer can be made staff (same account kept)', r.status === 201 && r.json.staff.id === custProfile.id, JSON.stringify(r.json));
+r = await staff.req('DELETE', `/api/admin/staff/${custProfile.id}`);
+const [{ role: custRole }] = await sql`select role from profiles where id = ${custProfile.id}`;
+check('removing access returns them to a normal customer', r.status === 200 && custRole === 'customer', custRole);
+r = await staff.req('DELETE', `/api/admin/staff/${newRow.id}`);
+check('owner can remove staff access', r.status === 200);
+r = await newClient.req('GET', '/api/admin/kitchen');
+check('removed staff is signed out of the admin API at once', r.status === 403);
+r = await staff.req('POST', '/api/auth/staff/otp/request', { email: newStaff });
+check('removed staff can no longer request a sign-in code', r.status === 403 && r.json.code === 'not_staff');
+const staffAudit = await sql`select action from audit_logs where actor_email = ${OWNER} and entity_id = ${newRow.id}`;
+check('staff changes are audited', ['staff.add', 'staff.role', 'staff.remove'].every((a) => staffAudit.some((x) => x.action === a)), JSON.stringify(staffAudit));
 
 
 // ---- admin: authorization boundaries

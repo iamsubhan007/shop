@@ -8,6 +8,7 @@ const ACTIONS = {
   'order.status': 'Order status changed', 'payment.verify': 'Payment verified', 'payment.reject': 'Payment rejected', 'product.create': 'Product added', 'product.price': 'Price changed',
   'product.availability': 'Availability changed', 'product.delete': 'Product deleted', 'inventory.adjust': 'Stock adjusted', 'deal.create': 'Deal added', 'deal.update': 'Deal changed', 'deal.delete': 'Deal deleted',
   'coupon.create': 'Coupon added', 'coupon.toggle': 'Coupon switched', 'day.close': 'Day closed', 'backup.run': 'Backup taken', 'backup.download': 'Backup downloaded', export: 'Data exported', 'staff.login': 'Staff signed in',
+  'staff.add': 'Staff added', 'staff.role': 'Staff role changed', 'staff.remove': 'Staff access removed',
 };
 
 export default function SystemAdmin() {

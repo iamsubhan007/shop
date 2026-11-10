@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { BarChart3, ChefHat, DatabaseBackup, LayoutDashboard, LogOut, Menu as MenuIcon, Receipt, Settings, Tag, UtensilsCrossed, Users, X } from 'lucide-react';
+import { BarChart3, ChefHat, DatabaseBackup, LayoutDashboard, LogOut, Menu as MenuIcon, Receipt, Settings, Tag, UserCog, UtensilsCrossed, Users, X } from 'lucide-react';
 
 const NAV = [
   { href: '/admin', label: 'Dashboard', ur: 'ڈیش بورڈ', icon: LayoutDashboard, roles: ['owner', 'admin'] },
@@ -14,6 +14,7 @@ const NAV = [
   { href: '/admin/reports', label: 'Reports', ur: 'رپورٹس', icon: BarChart3, roles: ['owner', 'admin'] },
   { href: '/admin/customers', label: 'Customers & Coupons', ur: 'گاہک', icon: Users, roles: ['owner', 'admin'] },
   { href: '/admin/system', label: 'Backups & Activity', ur: 'بیک اپ', icon: DatabaseBackup, roles: ['owner'] },
+  { href: '/admin/staff', label: 'Staff Access', ur: 'اسٹاف', icon: UserCog, roles: ['owner'] },
   { href: '/admin/settings', label: 'Shop Settings', ur: 'سیٹنگز', icon: Settings, roles: ['owner', 'admin'] },
 ];
 
