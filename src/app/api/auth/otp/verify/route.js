@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { checkOtp, clientIp, createSession, findOrCreateCustomer, normalizeEmail, rateLimit } from '@/lib/server/auth';
+import { withErrorHandling } from '@/lib/server/withErrorHandling';
 
-export async function POST(request) {
+export const POST = withErrorHandling('otp.verify', async (request) => {
   const body = await request.json().catch(() => ({}));
   const email = normalizeEmail(body.email);
   const code = String(body.code || '').trim();
@@ -18,4 +19,4 @@ export async function POST(request) {
   await createSession(customer.id, 'customer');
   const { passwordHash, ...safe } = customer;
   return NextResponse.json({ success: true, user: safe, needsProfile: !customer.fullName || !customer.phone });
-}
+});

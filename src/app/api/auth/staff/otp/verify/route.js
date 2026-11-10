@@ -3,8 +3,9 @@ import { eq } from 'drizzle-orm';
 import { db, schema } from '@/db';
 import { checkOtp, clientIp, createSession, findStaffByEmail, normalizeEmail, rateLimit, staffKey } from '@/lib/server/auth';
 import { audit } from '@/lib/server/audit';
+import { withErrorHandling } from '@/lib/server/withErrorHandling';
 
-export async function POST(request) {
+export const POST = withErrorHandling('staff.otp.verify', async (request) => {
   const body = await request.json().catch(() => ({}));
   const email = normalizeEmail(body.email);
   const code = String(body.code || '').trim();
@@ -23,4 +24,4 @@ export async function POST(request) {
   await createSession(staff.id, 'staff');
   await audit(staff, 'staff.login', 'profile', staff.id);
   return NextResponse.json({ success: true, user: { id: staff.id, email: staff.email, fullName: staff.fullName, role: staff.role } });
-}
+});

@@ -48,7 +48,7 @@ function AuthFlow() {
       setStep('code');
     } else {
       if (r.retryAfterS) setCooldown(r.retryAfterS);
-      setError(r.error || 'Could not send the code.');
+      setError(r.error || (r.status >= 500 ? 'The server had a problem. Please try again in a few minutes.' : 'Could not send the code.'));
       if (r.retryAfterS && step === 'email') setStep('code');
     }
   };

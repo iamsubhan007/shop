@@ -29,7 +29,7 @@ export default function AdminLogin() {
     setBusy(true); setError('');
     const r = await post('/api/auth/staff/otp/request', { email });
     setBusy(false);
-    if (!r.ok) { if (r.retryAfterS) { setCooldown(r.retryAfterS); setStep('code'); } return setError(r.error || 'Could not send the code.'); }
+    if (!r.ok) { if (r.retryAfterS) { setCooldown(r.retryAfterS); setStep('code'); } return setError(r.error || (r.status >= 500 ? 'The server had a problem. Please try again in a few minutes.' : 'Could not send the code.')); }
     setCooldown(r.cooldownS || 60);
     setStep('code');
   };

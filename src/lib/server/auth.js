@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import { cookies, headers } from 'next/headers';
 import { and, eq, gt, isNull, sql } from 'drizzle-orm';
 import { db, schema } from '@/db';
+import { cleanEnv } from '@/lib/env';
 
 const { profiles, sessions, otpCodes, rateLimits } = schema;
 
@@ -17,10 +18,12 @@ const OTP_MAX_ATTEMPTS = 5;
 
 export const STAFF_ROLES = ['owner', 'admin', 'kitchen'];
 
+// Key used to hash one-time codes. SESSION_SECRET is the documented name; OTP_SECRET is accepted too because
+// it is what the example environment file calls it. The first one that is at least 16 characters is used.
 function secret() {
-  const s = process.env.SESSION_SECRET;
-  if (!s || s.length < 16) {
-    if (process.env.NODE_ENV === 'production') throw new Error('SESSION_SECRET must be set (16+ chars)');
+  const s = [process.env.SESSION_SECRET, process.env.OTP_SECRET].map(cleanEnv).find((v) => v.length >= 16);
+  if (!s) {
+    if (process.env.NODE_ENV === 'production') throw new Error('SESSION_SECRET (or OTP_SECRET) must be set, 16+ chars');
     return 'dev-insecure-secret';
   }
   return s;

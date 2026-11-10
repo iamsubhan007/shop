@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { clientIp, issueOtp, normalizeEmail, rateLimit } from '@/lib/server/auth';
 import { sendLoginOtp } from '@/lib/email';
+import { withErrorHandling } from '@/lib/server/withErrorHandling';
 
-export async function POST(request) {
+export const maxDuration = 30; // SMTP can be slow on a cold start; the default can be as low as 10 s on some Vercel plans
+
+export const POST = withErrorHandling('otp.request', async (request) => {
   const body = await request.json().catch(() => ({}));
   const email = normalizeEmail(body.email);
   if (!email) return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
@@ -23,4 +26,4 @@ export async function POST(request) {
     return NextResponse.json({ error: msg }, { status: 503 });
   }
   return NextResponse.json({ success: true, cooldownS: 60, hint: "Haven't received your code yet? Please check your Spam/Junk folder as well." });
-}
+});

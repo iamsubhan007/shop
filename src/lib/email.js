@@ -2,20 +2,14 @@ import 'server-only';
 import nodemailer from 'nodemailer';
 import { buildOtpEmail } from './otpEmail';
 import { resolveFrom } from './mailFrom';
+import { readSmtpEnv, transportOptions } from './smtpConfig';
 
 let transporter;
 function getTransporter() {
   if (transporter !== undefined) return transporter;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  if (!user || !pass) return (transporter = null);
-  const port = parseInt(process.env.SMTP_PORT || '587', 10);
-  transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port,
-    secure: port === 465,
-    auth: { user, pass },
-  });
+  const cfg = readSmtpEnv();
+  if (!cfg.user || !cfg.pass) return (transporter = null);
+  transporter = nodemailer.createTransport(transportOptions(cfg));
   return transporter;
 }
 
@@ -23,7 +17,8 @@ export const isEmailConfigured = () => !!getTransporter();
 
 let warnedFrom = false;
 function fromHeader() {
-  const { name, address, rewritten } = resolveFrom({ user: process.env.SMTP_USER, host: process.env.SMTP_HOST, from: process.env.SMTP_FROM });
+  const cfg = readSmtpEnv();
+  const { name, address, rewritten } = resolveFrom({ user: cfg.user, host: cfg.host, from: cfg.from });
   if (rewritten && !warnedFrom) {
     warnedFrom = true;
     console.warn('SMTP_FROM address differs from SMTP_USER; Gmail only sends as the logged-in account, so SMTP_USER is used as the sender.');
@@ -49,7 +44,13 @@ export async function sendLoginOtp(email, code, purpose = 'customer') {
     });
     return { ok: true };
   } catch (err) {
-    console.error('SMTP send failed:', err.code || err.message);
+    // Enough to tell EAUTH (wrong login/app password) from ETIMEDOUT/ESOCKET (network) in Vercel > Logs. No secrets.
+    console.error('SMTP send failed:', {
+      code: err.code,
+      responseCode: err.responseCode,
+      command: err.command,
+      response: String(err.response || err.message || '').split('\n')[0].slice(0, 200),
+    });
     return { ok: false, reason: 'send_failed' };
   }
 }

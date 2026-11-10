@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
 import { clientIp, findStaffByEmail, issueOtp, normalizeEmail, rateLimit, staffKey } from '@/lib/server/auth';
 import { sendLoginOtp } from '@/lib/email';
+import { withErrorHandling } from '@/lib/server/withErrorHandling';
+
+export const maxDuration = 30; // SMTP can be slow on a cold start; the default can be as low as 10 s on some Vercel plans
 
 // Only active staff emails get a code. Anyone else is told so right away (the sign-in form stays on the email step)
 // and no email is sent. This does reveal whether an address is a staff account; the per-IP and per-email
 // limits below keep it from being used to probe addresses in bulk.
-export async function POST(request) {
+export const POST = withErrorHandling('staff.otp.request', async (request) => {
   const body = await request.json().catch(() => ({}));
   const email = normalizeEmail(body.email);
   if (!email) return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
@@ -27,4 +30,4 @@ export async function POST(request) {
   const sent = await sendLoginOtp(email, issued.code, 'staff');
   if (!sent.ok) return NextResponse.json({ error: sent.reason === 'email_not_configured' ? 'Email (SMTP) is not configured on the server.' : 'We could not send the email. Please try again.' }, { status: 503 });
   return NextResponse.json({ success: true, cooldownS: 60 });
-}
+});
