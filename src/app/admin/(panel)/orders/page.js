@@ -304,6 +304,13 @@ function Detail({ id, onClose }) {
               {p.proofImageUrl && <a href={`/api/files/proof/${p.proofImageUrl}`} target="_blank" rel="noreferrer" className="block mt-1"><img src={`/api/files/proof/${p.proofImageUrl}`} alt="Payment proof" className="max-h-56 rounded-lg border" /></a>}
             </div>
           ))}
+          {(o.paymentProofUrl || o.payments.some((p) => p.proofImageUrl)) && (
+            <div className="print:hidden">
+              {o.paymentStatus === 'submitted' && !TERMINAL.includes(o.status)
+                ? <p className="text-[11px] text-zinc-400">Check this payment first (received or reject). After that you can delete the screenshot to free storage space.</p>
+                : <button disabled={busy} onClick={() => act({ action: 'deleteProof' }, 'Permanently delete this payment screenshot? The order and its payment record stay; only the picture is removed. This cannot be undone.')} className="flex items-center gap-1.5 text-xs font-semibold border border-red-300 text-red-700 rounded-lg px-3 py-1.5 bg-white"><Trash2 size={13} /> Delete payment screenshot</button>}
+            </div>
+          )}
           {o.paymentStatus === 'submitted' && (
             <div className="flex gap-2 print:hidden">
               <button disabled={busy} onClick={() => act({ action: 'payment', decision: 'verify' }, 'Mark this payment as received and confirm the order?')} className="flex-1 bg-emerald-600 text-white font-bold py-2.5 rounded-xl">Payment received ✓</button>

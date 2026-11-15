@@ -54,3 +54,21 @@ export async function sendLoginOtp(email, code, purpose = 'customer') {
     return { ok: false, reason: 'send_failed' };
   }
 }
+
+/** Sends a one-off notice to a staff member (for example the storage warning). Returns { ok, reason }; never throws. */
+export async function sendStaffEmail(to, { subject, text, html }) {
+  const t = getTransporter();
+  if (!t) return { ok: false, reason: 'email_not_configured' };
+  try {
+    await t.sendMail({ from: fromHeader(), to, subject, text, html, headers: { 'Auto-Submitted': 'auto-generated', 'X-Auto-Response-Suppress': 'OOF, AutoReply' } });
+    return { ok: true };
+  } catch (err) {
+    console.error('SMTP send failed:', {
+      code: err.code,
+      responseCode: err.responseCode,
+      command: err.command,
+      response: String(err.response || err.message || '').split('\n')[0].slice(0, 200),
+    });
+    return { ok: false, reason: 'send_failed' };
+  }
+}

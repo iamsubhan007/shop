@@ -10,8 +10,16 @@ The production database stays on its server. Backups are compressed JSON copies 
 | Manual (admin) | **Admin > Backups & Activity > Back up now** |
 | Command line | `node --env-file=.env.local scripts/backup.mjs [folder]` |
 
-Files live in `STORAGE_DIR/backups` (default `./storage/backups`). **On Vercel use a persistent volume or run the
-app on a VPS: serverless disks are wiped.** Retention: the newest *N* files are kept (Settings, default 14).
+Where the files are kept depends on the server (same rule as uploaded pictures):
+- **Supabase Storage** (when `SUPABASE_SERVICE_ROLE_KEY` is set; this is what Vercel needs, because a serverless disk is read-only): a private bucket named `<bucket>-backups` (default `hbt-files-backups`, created automatically). Backups are only handed out through the admin panel.
+- **Disk** (local development or a server with a persistent disk): `STORAGE_DIR/backups` (default `./storage/backups`).
+Retention: the newest *N* files are kept (Settings, default 14).
+
+### Storage & Backups page (owner and admin)
+- Shows how full the database and the file storage are against the plan limits (Settings > Storage limits & alerts; defaults are the Supabase free plan: 500 MB database, 1 GB files).
+- Owner and admin get an email, and a bar across the admin panel, when usage passes the warning percentage (default 80%), and again at 90% and 95%. While it stays high there is a weekly reminder. The check runs whenever someone has the admin panel open, and when the scheduled backup URL is called.
+- **Download** a backup to a phone or computer, and later open it under *Report from a saved backup* to see sales for any day, week or month. The file is read in the browser only; nothing is uploaded and the live shop is not changed. (Needs a browser that can open .gz files: current Chrome, Edge, Firefox, Safari; on iPhone iOS 16.4+.)
+- **Payment screenshots** can be deleted to free space: one at a time inside an order, or in bulk on this page. Screenshots of payments still waiting for review are never deleted. Screenshots are not part of backups.
 Every attempt (success or failure) is listed in Backups & Activity.
 
 ## Download to the owner's PC (optional, automatic)

@@ -34,6 +34,13 @@ const validators = {
   }),
   loyalty: z.object({ enabled: z.boolean(), points_per_100: num }),
   backup: z.object({ enabled: z.boolean(), every_hours: z.coerce.number().int().min(1).max(720), keep: z.coerce.number().int().min(1).max(365) }),
+  // Plan limits used by the storage meter, and when to warn the owner/admin (a percentage of the limit).
+  storage: z.object({
+    db_limit_mb: z.coerce.number().int().min(50).max(1000000),
+    files_limit_mb: z.coerce.number().int().min(50).max(1000000),
+    warn_percent: z.coerce.number().int().min(50).max(95),
+    alerts: z.boolean(),
+  }),
 };
 
 export async function GET(request) {

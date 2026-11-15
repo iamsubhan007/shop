@@ -1,14 +1,11 @@
 import 'server-only';
-import path from 'node:path';
 import { desc, eq } from 'drizzle-orm';
 import postgres from 'postgres';
 import { db, schema } from '@/db';
-import { STORAGE_DIR } from './storage';
 import { getSettings } from './settings';
-import { dumpToFile, pruneBackups } from './backupCore.mjs';
+import { buildBackup } from './backupCore.mjs';
+import { pruneBackupFiles, saveBackupFile } from './storageFiles';
 import { audit } from './audit';
-
-export const BACKUP_DIR = path.join(STORAGE_DIR, 'backups');
 
 function dbUrl() {
   // same normalisation as src/db/index.js
@@ -28,10 +25,12 @@ export async function runBackup(trigger, actor = null) {
   running = true;
   const sql = postgres(dbUrl(), { max: 1, prepare: false });
   try {
-    const { filename, sizeBytes } = await dumpToFile(sql, BACKUP_DIR);
-    const [row] = await db.insert(schema.backups).values({ filename, sizeBytes, status: 'success', trigger }).returning();
+    // Backups are kept in the app's file storage (Supabase Storage in production; a Vercel disk is read-only).
+    const { filename, buf } = await buildBackup(sql);
+    await saveBackupFile(filename, buf);
+    const [row] = await db.insert(schema.backups).values({ filename, sizeBytes: buf.length, status: 'success', trigger }).returning();
     const s = await getSettings();
-    await pruneBackups(BACKUP_DIR, Number(s.backup.keep));
+    await pruneBackupFiles(Number(s.backup.keep));
     await audit(actor, 'backup.run', 'backup', row.id, null, { trigger, filename });
     return { ok: true, backup: row };
   } catch (e) {

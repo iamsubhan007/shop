@@ -18,7 +18,7 @@ import { deriveSupabaseUrl } from '@/lib/supabaseUrl';
 // STORAGE_DIR is still used for backups (see backup.js).
 export const STORAGE_DIR = process.env.STORAGE_DIR || path.join(process.cwd(), 'storage');
 const MAX_BYTES = 5 * 1024 * 1024;
-const BUCKET = cleanEnv(process.env.SUPABASE_STORAGE_BUCKET) || 'hbt-files';
+export const BUCKET = cleanEnv(process.env.SUPABASE_STORAGE_BUCKET) || 'hbt-files';
 
 function supabaseConfig() {
   const key = cleanEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -35,7 +35,7 @@ export function storageBackend() {
 
 let client;
 let clientFor;
-function sb() {
+export function sb() {
   const cfg = supabaseConfig();
   const id = `${cfg.url}|${cfg.key}`;
   if (!client || clientFor !== id) {

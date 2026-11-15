@@ -7,6 +7,7 @@ import { changeOrderStatus, OrderError, reviewPayment } from '@/lib/server/order
 import { buildOrderText, dispatchOrderNotification, whatsappConfigured } from '@/lib/server/notify';
 import { ORDER_STATUSES, isOrderAdmin } from '@/lib/orderStatus';
 import { editOrderItems, setOrderDiscount, setOrderEta } from '@/lib/server/orderAdmin';
+import { deleteOrderProofs } from '@/lib/server/proofs';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +45,8 @@ const patch = z.discriminatedUnion('action', [
   z.object({ action: z.literal('eta'), minutes: z.union([z.null(), z.coerce.number().int().min(1).max(480)]) }),
   // Owner/admin only: a discount on this order, at any step before it is finished (value 0 removes it).
   z.object({ action: z.literal('discount'), type: z.enum(['amount', 'percent']).default('amount'), value: z.coerce.number().min(0).max(1000000), note: z.string().max(200).optional() }),
+  // Owner/admin only: delete the customer's payment screenshot to free storage (not while the payment awaits review).
+  z.object({ action: z.literal('deleteProof') }),
 ]);
 
 export async function PATCH(request, { params }) {
@@ -62,6 +65,10 @@ export async function PATCH(request, { params }) {
     if (body.action === 'payment') {
       const o = await reviewPayment(id, body.decision, g.staff, body.notes);
       return NextResponse.json({ success: true, status: o.status, paymentStatus: o.paymentStatus });
+    }
+    if (body.action === 'deleteProof') {
+      const r = await deleteOrderProofs(id, g.staff);
+      return NextResponse.json({ success: true, deleted: r.deleted });
     }
     if (body.action === 'items') {
       const r = await editOrderItems(id, g.staff, { changes: body.changes, add: body.add, note: body.note });

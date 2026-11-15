@@ -35,6 +35,8 @@ export function startMailSink(port = 2525) {
           return null;
         },
         count: () => inbox.length,
+        /** Every raw message (headers + body) delivered to `email` so far. */
+        mailsTo: (email) => inbox.filter((x) => x.to.includes(email.toLowerCase())).map((x) => x.raw),
       })
     )
   );

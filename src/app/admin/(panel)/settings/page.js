@@ -107,12 +107,23 @@ export default function SettingsAdmin() {
         </>)}
       </Section>
 
-      <Section title="Automatic backups" hint="Backups run on this schedule (owner can download them under Backups & Activity)." settingKey="backup" value={s.backup}>
+      <Section title="Automatic backups" hint="Backups run on this schedule. Owner and admin can download them under Storage & Backups." settingKey="backup" value={s.backup}>
         {(v, set) => (<>
           <Check label="Automatic backups on" checked={v.enabled} onChange={(x) => set({ enabled: x })} />
           <div className="grid grid-cols-2 gap-3">
             <Field label="Back up every (hours)"><input type="number" min="1" className={inp} value={v.every_hours} onChange={(e) => set({ every_hours: e.target.value })} /></Field>
             <Field label="Keep the latest (backups)"><input type="number" min="1" className={inp} value={v.keep} onChange={(e) => set({ keep: e.target.value })} /></Field>
+          </div>
+        </>)}
+      </Section>
+
+      <Section title="Storage limits & alerts" hint="The size limits of your hosting plan (Supabase free plan: 500 MB database, 1 GB files). When usage passes the warning percentage, owner and admin get an email and a bar across the admin panel." settingKey="storage" value={s.storage}>
+        {(v, set) => (<>
+          <Check label="Email owner and admin when storage is filling up" checked={v.alerts} onChange={(x) => set({ alerts: x })} />
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Database limit (MB)"><input type="number" min="50" className={inp} value={v.db_limit_mb} onChange={(e) => set({ db_limit_mb: e.target.value })} /></Field>
+            <Field label="Files limit (MB)"><input type="number" min="50" className={inp} value={v.files_limit_mb} onChange={(e) => set({ files_limit_mb: e.target.value })} /></Field>
+            <Field label="Warn at (% full)" hint="50 to 95"><input type="number" min="50" max="95" className={inp} value={v.warn_percent} onChange={(e) => set({ warn_percent: e.target.value })} /></Field>
           </div>
         </>)}
       </Section>

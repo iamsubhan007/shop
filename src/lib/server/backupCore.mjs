@@ -12,12 +12,12 @@ const gunzip = promisify(zlib.gunzip);
 // Parents first, so restore satisfies foreign keys.
 export const BACKUP_TABLES = [
   'profiles', 'categories', 'products', 'deals', 'shop_settings', 'deal_items', 'coupons', 'orders', 'order_items',
-  'payment_submissions', 'order_status_history', 'notifications', 'stock_movements', 'customer_addresses',
+  'payment_submissions', 'order_status_history', 'order_feedback', 'notifications', 'stock_movements', 'customer_addresses',
   'wishlist', 'cart_items', 'business_days', 'audit_logs', 'backups',
 ];
 
-export async function dumpToFile(sql, dir) {
-  await fs.mkdir(dir, { recursive: true });
+/** Reads every business table in one consistent snapshot and returns the compressed backup in memory. */
+export async function buildBackup(sql) {
   const tables = {};
   let rows = 0;
   await sql.begin('isolation level repeatable read read only', async (tx) => {
@@ -29,6 +29,12 @@ export async function dumpToFile(sql, dir) {
   });
   const buf = await gzip(Buffer.from(JSON.stringify({ version: 1, createdAt: new Date().toISOString(), tables })));
   const filename = `hbt-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json.gz`;
+  return { filename, buf, rows };
+}
+
+export async function dumpToFile(sql, dir) {
+  await fs.mkdir(dir, { recursive: true });
+  const { filename, buf, rows } = await buildBackup(sql);
   await fs.writeFile(path.join(dir, filename), buf);
   return { filename, sizeBytes: buf.length, rows };
 }

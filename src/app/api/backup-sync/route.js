@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import { desc, eq } from 'drizzle-orm';
 import { db, schema } from '@/db';
 import { tokenOk } from '@/lib/server/token';
-import { BACKUP_DIR } from '@/lib/server/backup';
+import { readBackupFile } from '@/lib/server/storageFiles';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -21,7 +19,7 @@ export async function GET(request) {
     return NextResponse.json({ files: rows.filter((r) => r.filename).map((r) => ({ name: r.filename, size: r.sizeBytes, createdAt: r.createdAt })) });
   }
   if (!/^hbt-backup-[\w.-]+\.json\.gz$/.test(file)) return NextResponse.json({ error: 'Bad file name.' }, { status: 400 });
-  const buf = await fs.readFile(path.join(BACKUP_DIR, file)).catch(() => null);
+  const buf = await readBackupFile(file);
   if (!buf) return NextResponse.json({ error: 'Not found.' }, { status: 404 });
   return new NextResponse(buf, { headers: { 'Content-Type': 'application/gzip', 'Cache-Control': 'no-store' } });
 }

@@ -21,6 +21,10 @@ export const SETTING_DEFAULTS = {
   },
   loyalty: { enabled: false, points_per_100: 0 },
   backup: { enabled: true, every_hours: 24, keep: 14 },
+  // Hosting-plan limits (Supabase free plan: 500 MB database, 1 GB files). Owner and admin are warned from warn_percent.
+  storage: { db_limit_mb: 500, files_limit_mb: 1024, warn_percent: 80, alerts: true },
+  // Bookkeeping for the storage warning emails, not a setting: the highest level warned about and when.
+  storage_alert: { level: 0, sent_at: null },
 };
 
 export async function getSettings() {
