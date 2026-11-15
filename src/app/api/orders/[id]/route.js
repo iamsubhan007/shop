@@ -17,16 +17,20 @@ export async function GET(request, { params }) {
   if (!order) return NextResponse.json({ error: 'Order not found.' }, { status: 404 });
 
   const customer = await getCustomer();
-  const staff = await getStaff();
+  // Staff who may read any order in full. Riders are deliberately NOT here: they only get the trimmed /api/rider view.
+  const staff = await getStaff(['owner', 'admin', 'kitchen']);
   const allowed = staff || (customer && order.userId === customer.id) || (token && order.trackingToken === token);
   if (!allowed) return NextResponse.json({ error: 'Order not found.' }, { status: 404 }); // don't reveal existence
 
   const items = await db.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, order.id));
   const history = await db.select().from(schema.orderStatusHistory).where(eq(schema.orderStatusHistory.orderId, order.id)).orderBy(asc(schema.orderStatusHistory.createdAt));
   const { trackingToken, idempotencyKey, ...safe } = order;
+  // The customer's own rating (and staff) can see it; a tracking-link holder cannot.
+  const [fb] = staff || (customer && order.userId === customer.id) ? await db.select().from(schema.orderFeedback).where(eq(schema.orderFeedback.orderId, order.id)) : [];
   return NextResponse.json({
     order: {
       ...safe,
+      feedback: fb ? { rating: fb.rating, comment: fb.comment } : null,
       subtotal: Number(order.subtotal),
       discountAmount: Number(order.discountAmount),
       deliveryFee: Number(order.deliveryFee),

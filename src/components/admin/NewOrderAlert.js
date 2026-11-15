@@ -181,7 +181,7 @@ export default function NewOrderAlert({ role }) {
             </ul>
             {list.count > shown.length && <p className="text-xs text-red-100 mt-2">+ {list.count - shown.length} more waiting</p>}
             {err && <p role="alert" className="text-xs bg-white text-red-700 rounded-lg p-2 mt-2">{err}</p>}
-            <p className="text-[11px] text-red-100 mt-2">This alert stops when the order is accepted, or if the customer cancels it.</p>
+            <p className="text-[11px] text-red-100 mt-2">This alert stops when the order is accepted or cancelled.</p>
             </>)}
           </div>
         </div>

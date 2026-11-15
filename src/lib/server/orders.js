@@ -1,10 +1,10 @@
 import 'server-only';
 import crypto from 'node:crypto';
-import { and, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, like, sql } from 'drizzle-orm';
 import { db, schema } from '@/db';
-import { getSettings, orderingState } from './settings';
+import { getSettings, orderingState, deliveryState } from './settings';
 import { evaluateDelivery } from '@/lib/delivery';
-import { PAYMENT_METHODS, nextStatuses, roleCanTransition, CUSTOMER_CANCELLABLE } from '@/lib/orderStatus';
+import { PAYMENT_METHODS, nextStatuses, roleCanTransition, canOverrideStatus, CUSTOMER_CANCELLABLE } from '@/lib/orderStatus';
 import { audit } from './audit';
 
 const { orders, orderItems, products, categories, deals, dealItems, paymentSubmissions, orderStatusHistory, notifications, stockMovements, coupons, profiles } = schema;
@@ -60,7 +60,11 @@ export async function createOrder(input, customer) {
   if (!state.open) throw new OrderError(state.notice || 'We are not taking orders right now.', 'ordering_closed', 409);
 
   const type = input.orderType;
-  if (type === 'delivery' && !settings.delivery.enabled) throw new OrderError('Home delivery is currently unavailable. Please choose pickup.', 'delivery_disabled', 409);
+  if (type === 'delivery') {
+    // Delivery switched off by the owner/admin, or outside the delivery hours they set (pickup is never affected).
+    const ds = deliveryState(settings);
+    if (!ds.available) throw new OrderError(ds.notice, ds.reason === 'hours' ? 'delivery_hours' : 'delivery_disabled', 409);
+  }
   if (type === 'pickup' && !settings.pickup.enabled) throw new OrderError('Pickup is currently unavailable.', 'pickup_disabled', 409);
 
   const method = input.paymentMethod;
@@ -176,9 +180,14 @@ export async function createOrder(input, customer) {
     // Human-readable sequential number per day, serialized by an advisory lock
     await tx.execute(sql`select pg_advisory_xact_lock(7331)`);
     const dayStart = startOfPkDay();
-    const [{ n }] = await tx.select({ n: sql`count(*)::int` }).from(orders).where(gte(orders.createdAt, dayStart));
     const stamp = new Date(dayStart.getTime() + 5 * 3600 * 1000).toISOString().slice(2, 10).replace(/-/g, '');
-    const orderNumber = `HBT-${stamp}-${String(n + 1).padStart(3, '0')}`;
+    // Next number = the highest number already issued today + 1 (not "how many orders exist today"): the owner/admin can
+    // now delete old orders, and counting would then hand out a number that another order of the day still has.
+    const [{ last }] = await tx
+      .select({ last: sql`coalesce(max(substring(${orders.orderNumber} from '[0-9]+$')::int), 0)::int` })
+      .from(orders)
+      .where(like(orders.orderNumber, `HBT-${stamp}-%`));
+    const orderNumber = `HBT-${stamp}-${String(last + 1).padStart(3, '0')}`;
 
     const [order] = await tx
       .insert(orders)
@@ -251,7 +260,13 @@ export async function changeOrderStatus(orderId, to, actor, { note, reason, asCu
       if (to !== 'Cancelled' || !CUSTOMER_CANCELLABLE.includes(from)) throw new OrderError('This order can no longer be cancelled online. Please contact the shop.', 'not_allowed', 409);
     } else {
       if (!roleCanTransition(actor.role, from, to)) throw new OrderError('You are not allowed to make this change.', 'forbidden', 403);
-      if (!nextStatuses(from, order.orderType).includes(to)) throw new OrderError(`Cannot move an order from "${from}" to "${to}".`, 'bad_transition', 409);
+      // Owner/admin may force an in-progress order to Completed or Cancelled from any step; everyone else follows the flow.
+      const override = canOverrideStatus(actor.role, from, to);
+      if (!override && !nextStatuses(from, order.orderType).includes(to)) throw new OrderError(`Cannot move an order from "${from}" to "${to}".`, 'bad_transition', 409);
+      if (override && to === 'Completed' && order.paymentMethod !== 'cod' && order.paymentStatus !== 'verified') {
+        throw new OrderError('Verify the payment before completing this order.', 'payment_unverified', 409);
+      }
+      if (to === 'Cancelled' && !String(note || reason || '').trim()) throw new OrderError('Please write a reason for cancelling this order.', 'reason_required', 400);
     }
     // Prepaid orders cannot be confirmed until the payment is verified.
     if (to === 'Confirmed' && order.paymentMethod !== 'cod' && order.paymentStatus !== 'verified') {

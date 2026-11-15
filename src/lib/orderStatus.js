@@ -44,15 +44,22 @@ export function nextStatuses(from, orderType) {
 }
 
 /**
- * Once an order is placed, staff (owner, admin and kitchen) can never cancel or reject it: only the customer can
- * cancel it, and only until it has been accepted (see CUSTOMER_CANCELLABLE). Staff accept it and then fulfil it.
+ * Owner and admin run the shop. Only they may cancel an order, set it to Completed outside the normal flow, change
+ * what is in it, or delete old orders. Kitchen and riders never can; riders only confirm their own deliveries.
  */
-export const STAFF_NEVER_ENDS = ['Cancelled', 'Rejected'];
+export const ORDER_ADMIN_ROLES = ['owner', 'admin'];
+export const isOrderAdmin = (role) => ORDER_ADMIN_ROLES.includes(role);
+
+/** Nobody on staff rejects an order. (The customer can cancel before it is accepted; owner/admin can cancel.) */
+export const STAFF_NEVER_ENDS = ['Rejected'];
+
+/** Owner/admin can force an order that is still in progress to Completed or Cancelled, whatever step it is on. */
+export const canOverrideStatus = (role, from, to) => isOrderAdmin(role) && (to === 'Completed' || to === 'Cancelled') && !TERMINAL.includes(from);
 
 /**
  * Orders that are waiting to be accepted. These raise the alarm in the staff portal until someone accepts them
  * or the customer cancels. 'Payment Pending' (a prepaid order the customer has not paid yet) is deliberately left
- * out: nobody on staff can act on it, and since staff cannot cancel it, it would ring forever if abandoned.
+ * out: nothing can be accepted yet, so an abandoned one would ring forever.
  * It starts ringing as soon as the customer submits payment ('Payment Verification').
  * Kitchen only hears orders it can accept itself; payment checks belong to owner/admin.
  */
@@ -65,6 +72,7 @@ export const NEEDS_ACCEPTANCE = {
 /** Which transitions each staff role may perform. Kitchen only handles cooking/dispatch steps. */
 export function roleCanTransition(role, from, to) {
   if (STAFF_NEVER_ENDS.includes(to)) return false;
+  if (to === 'Cancelled') return isOrderAdmin(role); // kitchen and riders can never cancel
   if (role === 'owner' || role === 'admin') return true;
   if (role === 'kitchen') {
     return (from === 'Placed' && to === 'Confirmed') || // COD only: prepaid is blocked until payment is verified
@@ -72,6 +80,8 @@ export function roleCanTransition(role, from, to) {
       (from === 'Cooking' && (to === 'Ready for Pickup' || to === 'Out for Delivery')) ||
       ((from === 'Ready for Pickup' || from === 'Out for Delivery') && to === 'Completed');
   }
+  // A rider can only confirm that an order they are delivering has been handed over (see /api/rider).
+  if (role === 'rider') return from === 'Out for Delivery' && to === 'Completed';
   return false;
 }
 

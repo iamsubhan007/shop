@@ -130,6 +130,10 @@ export const orders = pgTable('orders', {
   paymentProofUrl: text('payment_proof_url'),
   specialInstructions: text('special_instructions'),
   cancelReason: text('cancel_reason'),
+  // Optional "ready / delivered by" time that owner/admin can set: the customer sees a countdown.
+  etaAt: timestamp('eta_at', { withTimezone: true }),
+  // The part of discount_amount that owner/admin gave by hand after the order was placed (the rest is the coupon).
+  manualDiscount: numeric('manual_discount', { precision: 10, scale: 2 }).default('0').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 }, (t) => [
@@ -344,4 +348,15 @@ export const pushSubscriptions = pgTable('push_subscriptions', {
   userAgent: text('user_agent'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// A customer's rating and comment for one of their completed orders (at most one per order; they can edit it).
+export const orderFeedback = pgTable('order_feedback', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  orderId: uuid('order_id').references(() => orders.id, { onDelete: 'cascade' }).notNull().unique(),
+  userId: uuid('user_id').references(() => profiles.id, { onDelete: 'set null' }),
+  rating: integer('rating').notNull(), // 1 (poor) .. 5 (great)
+  comment: text('comment'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });

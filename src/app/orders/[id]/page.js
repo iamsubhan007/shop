@@ -3,7 +3,7 @@
 import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
-import { CheckCircle2, Circle, Loader2, MessageCircle, Upload, XCircle } from 'lucide-react';
+import { CheckCircle2, Circle, Loader2, MessageCircle, Star, Timer, Upload, XCircle } from 'lucide-react';
 import { useSite } from '@/context/SiteContext';
 import { useAuth } from '@/context/AuthContext';
 import { CUSTOMER_CANCELLABLE, PAYMENT_LABELS, statusColor, timelineSteps } from '@/lib/orderStatus';
@@ -24,6 +24,13 @@ function OrderView() {
   const [ref, setRef] = useState('');
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [stars, setStars] = useState(0); // feedback form
+  const [fbText, setFbText] = useState('');
+  const [fbBusy, setFbBusy] = useState(false);
+  const [fbMsg, setFbMsg] = useState('');
+  const [editFb, setEditFb] = useState(false);
+  const [, setTick] = useState(0);
+  useEffect(() => { const t = setInterval(() => setTick((n) => n + 1), 30000); return () => clearInterval(t); }, []); // keeps the countdown moving
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/orders/${id}${token ? `?t=${token}` : ''}`, { cache: 'no-store' });
@@ -75,6 +82,18 @@ function OrderView() {
     load();
   };
 
+  const sendFeedback = async () => {
+    if (!stars) return setFbMsg('Please tap the stars to rate your order.');
+    setFbBusy(true); setFbMsg('');
+    try {
+      const res = await fetch(`/api/orders/${order.id}/feedback`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rating: stars, comment: fbText || null }) });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) setFbMsg(j.error || 'Could not send your feedback. Please try again.');
+      else { setEditFb(false); await load(); }
+    } catch { setFbMsg('Could not send your feedback. Check your connection and try again.'); }
+    setFbBusy(false);
+  };
+
   if (notFound) return <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 p-6 text-center"><h1 className="font-bold">Order not found</h1><p className="text-sm text-zinc-500">Check the link, or sign in with the account you ordered with.</p><Link href="/auth?next=/orders" className="px-5 py-2.5 bg-red-700 text-white rounded-xl text-sm font-bold">Sign in</Link></div>;
   if (!order) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="animate-spin text-zinc-400" /></div>;
 
@@ -99,6 +118,18 @@ function OrderView() {
         <h1 className="text-2xl font-black">{order.orderNumber}</h1>
         <span className={`text-xs font-bold px-3 py-1 rounded-full ${statusColor(order.status)}`}>{order.status}</span>
       </div>
+
+      {order.etaAt && !dead && order.status !== 'Completed' && (() => {
+        const left = Math.ceil((new Date(order.etaAt).getTime() - Date.now()) / 60000);
+        return (
+          <div role="status" data-testid="order-timer" className="flex items-center gap-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 p-4 text-sm">
+            <Timer size={22} className="shrink-0" />
+            {left > 0
+              ? <span><strong>About {left} min left.</strong> We will have your order {order.orderType === 'delivery' ? 'with you' : 'ready'} in about {left} minute{left === 1 ? '' : 's'}.</span>
+              : <span><strong>Almost there.</strong> It is taking a little longer than planned. Thank you for your patience.</span>}
+          </div>
+        );
+      })()}
 
       <section className={card} aria-label="Order progress">
         {dead ? (
@@ -145,6 +176,38 @@ function OrderView() {
             <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
           </label>
           <button onClick={submitPayment} disabled={busy || (!ref && !file)} className="mt-3 w-full bg-red-700 disabled:bg-zinc-400 text-white font-bold py-2.5 rounded-xl text-sm">{busy ? 'Sending…' : 'Submit for verification'}</button>
+        </section>
+      )}
+
+      {isOwner && order.status === 'Completed' && (
+        <section className={card} aria-label="Your feedback" data-testid="feedback">
+          <h2 className="font-bold text-sm mb-2">How was your order?</h2>
+          {order.feedback && !editFb ? (
+            <div className="text-sm space-y-2">
+              <div className="flex items-center gap-0.5" aria-label={`You rated ${order.feedback.rating} out of 5`}>
+                {[1, 2, 3, 4, 5].map((n) => <Star key={n} size={20} className={n <= order.feedback.rating ? 'fill-amber-400 text-amber-400' : 'text-zinc-300'} />)}
+              </div>
+              {order.feedback.comment && <p className="text-zinc-700">{order.feedback.comment}</p>}
+              <p className="text-xs text-emerald-700 font-semibold">Thank you for your feedback!</p>
+              <button onClick={() => { setStars(order.feedback.rating); setFbText(order.feedback.comment || ''); setEditFb(true); }} className="text-xs underline text-zinc-500">Change my feedback</button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-1" role="radiogroup" aria-label="Rating">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button key={n} type="button" role="radio" aria-checked={stars === n} aria-label={`${n} star${n === 1 ? '' : 's'}`} onClick={() => setStars(n)} className="p-0.5">
+                    <Star size={30} className={n <= stars ? 'fill-amber-400 text-amber-400' : 'text-zinc-300'} />
+                  </button>
+                ))}
+              </div>
+              <textarea value={fbText} onChange={(e) => setFbText(e.target.value)} maxLength={500} rows={3} placeholder="Tell us more (optional)" className="w-full text-sm p-3 border border-zinc-300 rounded-xl" />
+              {fbMsg && <p role="alert" className="text-xs text-red-700">{fbMsg}</p>}
+              <div className="flex gap-2">
+                <button onClick={sendFeedback} disabled={fbBusy} className="bg-red-700 disabled:bg-zinc-400 text-white font-bold px-5 py-2.5 rounded-xl text-sm">{fbBusy ? 'Sending…' : 'Send feedback'}</button>
+                {editFb && <button onClick={() => { setEditFb(false); setFbMsg(''); }} className="px-4 py-2.5 rounded-xl text-sm border border-zinc-300">Cancel</button>}
+              </div>
+            </div>
+          )}
         </section>
       )}
 

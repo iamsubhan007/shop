@@ -315,15 +315,18 @@ const pv = aOwner.json.orders?.find((o) => o.id === prepaid2.orderId);
 check('alarm: prepaid order rings once payment is submitted (owner), but cannot be accepted yet', r.status === 200 && !!pv && pv.canAccept === false, JSON.stringify(pv));
 check('alarm: kitchen does not hear payment-check orders', !idsOf(aKitchen).includes(prepaid2.orderId));
 
-// staff can never cancel or reject, in any role, at any stage
+// Nobody on staff rejects an order, and kitchen can never cancel. (Owner/admin CAN cancel, but only with a reason:
+// that and the rest of the owner/admin powers are covered in scripts/e2e-rider.mjs.)
 for (const [who, client] of [['owner', staff], ['admin', adminC], ['kitchen', kitchen]]) {
-  for (const st of ['Cancelled', 'Rejected']) {
-    r = await client.req('PATCH', `/api/admin/orders/${cod2.orderId}`, { action: 'status', status: st, note: 'no' });
-    check(`${who} cannot ${st === 'Cancelled' ? 'cancel' : 'reject'} a placed order`, r.status === 403, `${r.status} ${JSON.stringify(r.json)}`);
-  }
+  r = await client.req('PATCH', `/api/admin/orders/${cod2.orderId}`, { action: 'status', status: 'Rejected', note: 'no' });
+  check(`${who} cannot reject a placed order`, r.status === 403, `${r.status} ${JSON.stringify(r.json)}`);
 }
-r = await staff.req('PATCH', `/api/admin/orders/${prepaid2.orderId}`, { action: 'status', status: 'Cancelled', note: 'no' });
-check('owner cannot cancel an order that is waiting for payment check', r.status === 403);
+r = await kitchen.req('PATCH', `/api/admin/orders/${cod2.orderId}`, { action: 'status', status: 'Cancelled', note: 'no' });
+check('kitchen cannot cancel a placed order', r.status === 403, `${r.status} ${JSON.stringify(r.json)}`);
+r = await staff.req('PATCH', `/api/admin/orders/${cod2.orderId}`, { action: 'status', status: 'Cancelled' });
+check('owner must write a reason to cancel (400, order untouched)', r.status === 400 && /reason/i.test(r.json?.error || ''), `${r.status} ${JSON.stringify(r.json)}`);
+r = await kitchen.req('PATCH', `/api/admin/orders/${prepaid2.orderId}`, { action: 'status', status: 'Cancelled', note: 'no' });
+check('kitchen cannot cancel an order that is waiting for payment check', r.status === 403);
 const [{ status: stillPlaced }] = await sql`select status from orders where id = ${cod2.orderId}`;
 aOwner = await staff.req('GET', '/api/admin/alerts');
 check('the alarm keeps ringing after those blocked attempts', stillPlaced === 'Placed' && idsOf(aOwner).includes(cod2.orderId));
@@ -332,8 +335,8 @@ check('the alarm keeps ringing after those blocked attempts', stillPlaced === 'P
 r = await kitchen.req('PATCH', `/api/admin/orders/${cod2.orderId}`, { action: 'status', status: 'Confirmed' });
 aOwner = await staff.req('GET', '/api/admin/alerts'); aKitchen = await kitchen.req('GET', '/api/admin/alerts');
 check('kitchen accepting the order stops its alarm for everyone', r.status === 200 && !idsOf(aOwner).includes(cod2.orderId) && !idsOf(aKitchen).includes(cod2.orderId));
-r = await staff.req('PATCH', `/api/admin/orders/${cod2.orderId}`, { action: 'status', status: 'Cancelled', note: 'no' });
-check('after acceptance, staff still cannot cancel', r.status === 403);
+r = await kitchen.req('PATCH', `/api/admin/orders/${cod2.orderId}`, { action: 'status', status: 'Cancelled', note: 'no' });
+check('after acceptance, kitchen still cannot cancel', r.status === 403);
 r = await cust.req('POST', `/api/orders/${cod2.orderId}/cancel`, {});
 check('after acceptance the customer cannot cancel online either', r.status === 409);
 

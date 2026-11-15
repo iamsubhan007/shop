@@ -6,8 +6,9 @@ import { api, when } from '@/components/admin/api';
 
 const inp = 'border border-zinc-300 rounded-lg px-3 py-2 text-sm bg-white';
 const ROLE_HELP = {
-  admin: 'Orders, menu & stock, deals, reports, customers and shop settings.',
+  admin: 'Orders, menu & stock, deals, reports, customers and shop settings. Can cancel or complete orders, change their items and delete old orders.',
   kitchen: 'The kitchen queue only (no prices, reports or settings).',
+  rider: 'Only the Deliveries screen: address, map, items and bill for orders out for delivery, and a button to confirm delivery and cash received. Never sees phone numbers or emails.',
 };
 
 export default function StaffManager() {
@@ -66,6 +67,7 @@ export default function StaffManager() {
             <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className={`${inp} w-full mt-1`}>
               <option value="admin">Admin</option>
               <option value="kitchen">Kitchen</option>
+              <option value="rider">Rider</option>
             </select>
           </label>
           <button disabled={busy} className="bg-red-700 hover:bg-red-600 disabled:opacity-60 text-white font-bold rounded-lg px-4 py-2 text-sm h-[38px]">{busy ? 'Adding…' : 'Add staff'}</button>
@@ -94,6 +96,7 @@ export default function StaffManager() {
                         <select aria-label={`Role for ${m.email}`} value={m.role} onChange={(e) => changeRole(m, e.target.value)} className={inp}>
                           <option value="admin">Admin</option>
                           <option value="kitchen">Kitchen</option>
+                          <option value="rider">Rider</option>
                         </select>
                         <button onClick={() => remove(m)} className="flex items-center gap-1.5 text-red-700 hover:bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs font-semibold"><Trash2 size={14} /> Remove access</button>
                       </>

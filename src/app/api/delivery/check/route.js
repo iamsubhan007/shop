@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSettings } from '@/lib/server/settings';
+import { getSettings, deliveryState } from '@/lib/server/settings';
 import { evaluateDelivery } from '@/lib/delivery';
 import { clientIp, rateLimit } from '@/lib/server/auth';
 
@@ -10,14 +10,18 @@ export async function POST(request) {
   const s = await getSettings();
   const r = evaluateDelivery({ shop: s.shop, radiusM: Number(s.delivery.radius_m), lat: body.latitude, lng: body.longitude });
   if (r.reason === 'invalid_coordinates') return NextResponse.json({ error: 'Invalid coordinates.' }, { status: 400 });
+  const ds = deliveryState(s); // delivery switched off, or outside the delivery hours the owner/admin set
   return NextResponse.json({
-    eligible: r.eligible && !!s.delivery.enabled,
+    eligible: r.eligible && ds.available,
     deliveryDisabled: !s.delivery.enabled,
+    deliveryHoursClosed: ds.reason === 'hours',
     distanceM: Math.round(r.distanceM),
     radiusM: r.radiusM,
     deliveryFee: Number(s.delivery.fee),
-    message: r.eligible
-      ? `Great news! You are ${Math.round(r.distanceM)} m from us, so delivery is available.`
-      : `You are ${Math.round(r.distanceM)} m away. Delivery covers ${r.radiusM} m around our shop, but you can still order for pickup.`,
+    message: r.eligible && ds.reason === 'hours'
+      ? ds.notice
+      : r.eligible
+        ? `Great news! You are ${Math.round(r.distanceM)} m from us, so delivery is available.`
+        : `You are ${Math.round(r.distanceM)} m away. Delivery covers ${r.radiusM} m around our shop, but you can still order for pickup.`,
   });
 }

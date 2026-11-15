@@ -17,7 +17,13 @@ const validators = {
     open_time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Opening time must be HH:MM').default('08:00'),
     close_time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Closing time must be HH:MM').default('23:00'), social: z.object({ facebook: str(200), instagram: str(200) }).optional(),
   }),
-  delivery: z.object({ enabled: z.boolean(), radius_m: z.coerce.number().min(100).max(20000), fee: num, free_over: num, min_order: num }),
+  delivery: z.object({
+    enabled: z.boolean(), radius_m: z.coerce.number().min(100).max(20000), fee: num, free_over: num, min_order: num,
+    // Optional daily delivery window (shop-local time). Off by default; pickup is never affected.
+    hours_enabled: z.boolean().default(false),
+    start_time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Delivery start time must be HH:MM').default('11:00'),
+    end_time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Delivery end time must be HH:MM').default('23:00'),
+  }).refine((d) => !d.hours_enabled || d.start_time !== d.end_time, { message: 'Delivery start and end time must be different.' }),
   pickup: z.object({ enabled: z.boolean() }),
   ordering: z.object({ open: z.boolean(), notice: str(300), reopen_at: z.string().datetime().nullable().optional() }),
   payment: z.object({

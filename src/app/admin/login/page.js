@@ -40,7 +40,7 @@ export default function AdminLogin() {
     const r = await post('/api/auth/staff/otp/verify', { email, code });
     setBusy(false);
     if (!r.ok) return setError(r.error || 'Sign in failed.');
-    router.replace(r.user.role === 'kitchen' ? '/admin/kitchen' : '/admin');
+    router.replace(r.user.role === 'kitchen' ? '/admin/kitchen' : r.user.role === 'rider' ? '/admin/rider' : '/admin');
     router.refresh();
   };
 

@@ -52,10 +52,24 @@ export default function SettingsAdmin() {
       </Section>
 
       <Section title="Delivery & pickup" settingKey="delivery" value={{ ...s.delivery, pickup: s.pickup.enabled }}
-        build={(v) => ({ enabled: v.enabled, radius_m: v.radius_m, fee: v.fee, free_over: v.free_over, min_order: v.min_order })}
+        build={(v) => ({ enabled: v.enabled, radius_m: v.radius_m, fee: v.fee, free_over: v.free_over, min_order: v.min_order, hours_enabled: !!v.hours_enabled, start_time: v.start_time || '11:00', end_time: v.end_time || '23:00' })}
         onSaved={() => {}}>
         {(v, set) => (<>
           <Check label="Home delivery available" checked={v.enabled} onChange={(x) => set({ enabled: x })} />
+          <div className="rounded-xl bg-zinc-50 border border-zinc-200 p-3 space-y-2">
+            <Check label="Only deliver during set hours" checked={v.hours_enabled} onChange={(x) => set({ hours_enabled: x })} />
+            {v.hours_enabled && (
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Delivery starts"><input type="time" className={inp} value={v.start_time || '11:00'} onChange={(e) => set({ start_time: e.target.value })} /></Field>
+                <Field label="Delivery stops"><input type="time" className={inp} value={v.end_time || '23:00'} onChange={(e) => set({ end_time: e.target.value })} /></Field>
+              </div>
+            )}
+            <p className="text-xs text-zinc-500">
+              {v.hours_enabled
+                ? `Home delivery orders are only accepted ${fmtHours(v.start_time || '11:00', v.end_time || '23:00')} each day. Outside those hours customers can still order for pickup.`
+                : 'Home delivery is offered whenever the shop is open for orders.'}
+            </p>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Delivery radius (metres)"><input type="number" min="100" className={inp} value={v.radius_m} onChange={(e) => set({ radius_m: e.target.value })} /></Field>
             <Field label="Delivery fee (Rs.)"><input type="number" min="0" className={inp} value={v.fee} onChange={(e) => set({ fee: e.target.value })} /></Field>

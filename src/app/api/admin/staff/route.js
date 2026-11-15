@@ -12,7 +12,7 @@ const { profiles } = schema;
 
 // The owner account is created by the seed (OWNER_EMAIL). Only these two roles can be granted here,
 // so nobody can be promoted to owner from the panel.
-const GRANTABLE_ROLES = ['admin', 'kitchen'];
+const GRANTABLE_ROLES = ['admin', 'kitchen', 'rider'];
 
 const addSchema = z.object({
   email: z.string().trim().min(3).max(254),
@@ -44,7 +44,7 @@ export async function POST(request) {
   if (g.error) return g.error;
 
   const p = addSchema.safeParse(await request.json().catch(() => null));
-  if (!p.success) return NextResponse.json({ error: 'Enter a valid email and choose a role (Admin or Kitchen).' }, { status: 400 });
+  if (!p.success) return NextResponse.json({ error: 'Enter a valid email and choose a role (Admin, Kitchen or Rider).' }, { status: 400 });
   const email = normalizeEmail(p.data.email);
   if (!email) return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
   const { role } = p.data;

@@ -15,7 +15,8 @@ No Postgres installed? `npm run db:local` runs a local one (dev only, port 54329
 
 ## Sign-in (no passwords)
 Customers and staff both sign in with a 6-digit code emailed over **SMTP** (`SMTP_*` in `.env.local`; Gmail needs an App Password).
-The owner row is created from `OWNER_EMAIL`; the owner can add more staff roles (`owner`, `admin`, `kitchen`) by inserting profiles with that role.
+The owner row is created from `OWNER_EMAIL`; the owner adds staff (`admin`, `kitchen`, `rider`) under **Staff access** in the admin area.
+Only the owner and admins can cancel, force-complete, edit the items of, discount, time or delete orders. Kitchen staff work the order queue; riders only see the deliveries that are out with them (customer name, address, items and bill, never phone or email) and confirm delivery and cash received.
 Staff area: **/admin** (separate login, role-checked on the server).
 
 ## Required configuration to go live

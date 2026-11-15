@@ -9,7 +9,7 @@ export default async function StaffPage() {
   const owner = await getStaff(['owner']);
   if (!owner) {
     const anyStaff = await getStaff();
-    redirect(anyStaff?.role === 'kitchen' ? '/admin/kitchen' : '/admin');
+    redirect(anyStaff?.role === 'kitchen' ? '/admin/kitchen' : anyStaff?.role === 'rider' ? '/admin/rider' : '/admin');
   }
   return <StaffManager />;
 }

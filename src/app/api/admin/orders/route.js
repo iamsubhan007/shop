@@ -30,6 +30,7 @@ export async function GET(request) {
   const rows = await db.select().from(orders).where(where).orderBy(desc(orders.createdAt)).limit(limit).offset((page - 1) * limit);
   const items = rows.length ? await db.select().from(orderItems).where(inArray(orderItems.orderId, rows.map((r) => r.id))) : [];
   const notifs = rows.length ? await db.select().from(notifications).where(inArray(notifications.orderId, rows.map((r) => r.id))) : [];
+  const feedbacks = rows.length ? await db.select({ orderId: schema.orderFeedback.orderId, rating: schema.orderFeedback.rating }).from(schema.orderFeedback).where(inArray(schema.orderFeedback.orderId, rows.map((r) => r.id))) : [];
   return NextResponse.json({
     total: n,
     page,
@@ -38,6 +39,7 @@ export async function GET(request) {
       ...o,
       subtotal: Number(o.subtotal), deliveryFee: Number(o.deliveryFee), discountAmount: Number(o.discountAmount), totalAmount: Number(o.totalAmount),
       trackingToken: undefined,
+      feedbackRating: feedbacks.find((x) => x.orderId === o.id)?.rating ?? null,
       // Only meaningful when automatic WhatsApp alerts are set up; otherwise hide it so no failure is shown.
       notification: whatsappConfigured() ? notifs.find((x) => x.orderId === o.id)?.status || null : null,
       items: items.filter((i) => i.orderId === o.id).map((i) => ({ title: i.itemTitle, quantity: i.quantity, notes: i.notes, unitPrice: Number(i.unitPrice) })),

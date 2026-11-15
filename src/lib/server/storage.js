@@ -99,6 +99,25 @@ export async function saveImage(file, sub) {
   }
 }
 
+/** Best-effort removal of a stored image (used when old orders are deleted). Never throws; false if nothing was removed. */
+export async function deleteImage(sub, name) {
+  if (!/^[a-f0-9-]{36}\.(jpg|png|webp)$/.test(String(name || ''))) return false;
+  try {
+    const backend = storageBackend();
+    if (backend === 'supabase') {
+      const { error } = await sb().storage.from(BUCKET).remove([`${sub}/${name}`]);
+      return !error;
+    }
+    if (backend === 'disk') {
+      await fs.unlink(path.join(STORAGE_DIR, sub, name));
+      return true;
+    }
+  } catch {
+    // already gone, or storage unreachable: the order is deleted either way
+  }
+  return false;
+}
+
 export async function readImage(sub, name) {
   if (!/^[a-f0-9-]{36}\.(jpg|png|webp)$/.test(name)) return null;
   try {

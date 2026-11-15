@@ -20,13 +20,13 @@ async function loadTarget(id, me) {
   return { target: t };
 }
 
-/** Owner only: switch a staff member between Admin and Kitchen. Takes effect on their next request. */
+/** Owner only: switch a staff member between Admin, Kitchen and Rider. Takes effect on their next request. */
 export async function PATCH(request, { params }) {
   const g = await requireStaff(request, ['owner']);
   if (g.error) return g.error;
   const { id } = await params;
-  const p = z.object({ role: z.enum(['admin', 'kitchen']) }).safeParse(await request.json().catch(() => null));
-  if (!p.success) return NextResponse.json({ error: 'Choose Admin or Kitchen.' }, { status: 400 });
+  const p = z.object({ role: z.enum(['admin', 'kitchen', 'rider']) }).safeParse(await request.json().catch(() => null));
+  if (!p.success) return NextResponse.json({ error: 'Choose Admin, Kitchen or Rider.' }, { status: 400 });
   const t = await loadTarget(id, g.staff);
   if (t.error) return t.error;
 

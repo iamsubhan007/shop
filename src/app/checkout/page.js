@@ -49,7 +49,8 @@ export default function CheckoutPage() {
   // Keep chosen order type valid against shop settings
   useEffect(() => {
     if (!settings) return;
-    if (orderType === 'delivery' && !settings.delivery.enabled && settings.pickup.enabled) setOrderType('pickup');
+    const deliveryAvailable = settings.delivery.enabled && settings.deliveryState?.available !== false; // also off outside the delivery hours
+    if (orderType === 'delivery' && !deliveryAvailable && settings.pickup.enabled) setOrderType('pickup');
   }, [settings, orderType, setOrderType]);
 
   // Only offer methods allowed for this order type AND configured by the owner
@@ -158,7 +159,7 @@ export default function CheckoutPage() {
   }
 
   const closed = settings.orderingState && !settings.orderingState.open;
-  const deliveryOn = settings.delivery.enabled;
+  const deliveryOn = settings.delivery.enabled && settings.deliveryState?.available !== false;
   const pickupOn = settings.pickup.enabled;
   const pay = instructions?.[paymentMethod];
   const card = 'bg-white rounded-2xl border border-zinc-200 p-5 shadow-sm';
@@ -191,6 +192,9 @@ export default function CheckoutPage() {
                 </button>
               ))}
             </div>
+            {settings.delivery.enabled && settings.deliveryState?.reason === 'hours' && (
+              <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2.5 mt-3">{settings.deliveryState.notice}</p>
+            )}
             {orderType === 'pickup' && (
               <p className="text-xs text-zinc-600 mt-3">Collect from: <strong>{settings.shop.address}</strong>. <a className="text-red-700 underline" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${settings.shop.lat},${settings.shop.lng}`}>Get directions</a></p>
             )}

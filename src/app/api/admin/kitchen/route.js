@@ -27,6 +27,7 @@ export async function GET(request) {
       customerName: o.customerName,
       specialInstructions: o.specialInstructions,
       createdAt: o.createdAt,
+      etaAt: o.etaAt, // the countdown the owner/admin promised the customer (no money involved)
       items: items.filter((i) => i.orderId === o.id).map((i) => ({ title: i.itemTitle, quantity: i.quantity, notes: i.notes })),
     })),
   });

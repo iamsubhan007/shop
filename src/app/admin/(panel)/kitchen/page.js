@@ -62,7 +62,7 @@ export default function Kitchen() {
                     <article key={o.id} className={`bg-white rounded-2xl border-2 p-4 ${fresh.has(o.id) ? 'border-amber-400 animate-pulse' : mins > 30 ? 'border-red-300' : 'border-zinc-200'}`}>
                       <div className="flex justify-between items-start">
                         <div className="font-black text-lg">{o.orderNumber.split('-').slice(1).join('-')}</div>
-                        <div className="text-right text-xs"><div className={`font-bold ${mins > 30 ? 'text-red-600' : 'text-zinc-600'}`}>{ago(o.createdAt)}</div><div className="uppercase text-zinc-400">{o.orderType}</div></div>
+                        <div className="text-right text-xs"><div className={`font-bold ${mins > 30 ? 'text-red-600' : 'text-zinc-600'}`}>{ago(o.createdAt)}</div><div className="uppercase text-zinc-400">{o.orderType}</div>{o.etaAt && (() => { const left = Math.ceil((new Date(o.etaAt).getTime() - Date.now()) / 60000); return <div className={`font-bold ${left > 0 ? 'text-amber-700' : 'text-red-600'}`}>{left > 0 ? `⏱ ${left} min left` : '⏱ time is up'}</div>; })()}</div>
                       </div>
                       <ul className="mt-2 text-base font-semibold space-y-0.5">{o.items.map((i, k) => <li key={k}>{i.quantity} × {i.title}{i.notes && <span className="block text-xs font-normal text-zinc-500">{i.notes}</span>}</li>)}</ul>
                       {o.specialInstructions && <p className="mt-2 text-sm bg-amber-50 border border-amber-200 rounded-lg p-2">⚠ {o.specialInstructions}</p>}

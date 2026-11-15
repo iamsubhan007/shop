@@ -16,7 +16,9 @@ export const OTP_TTL_MS = 10 * 60 * 1000;
 export const OTP_RESEND_COOLDOWN_S = 60;
 const OTP_MAX_ATTEMPTS = 5;
 
-export const STAFF_ROLES = ['owner', 'admin', 'kitchen'];
+// Everyone who can sign in to /admin. A rider only ever sees the rider screens and the /api/rider routes: every other
+// route names the roles it allows, and the few that take "any staff" are pinned to the original three (see below).
+export const STAFF_ROLES = ['owner', 'admin', 'kitchen', 'rider'];
 
 // Key used to hash one-time codes. SESSION_SECRET is the documented name; OTP_SECRET is accepted too because
 // it is what the example environment file calls it. The first one that is at least 16 characters is used.
