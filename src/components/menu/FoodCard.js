@@ -4,6 +4,7 @@ import React from 'react';
 import { Heart, Plus, Check } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
+import SafeImage from '@/components/ui/SafeImage';
 
 export default function FoodCard({ product, onSelect }) {
   const { addToCart } = useCart();
@@ -34,11 +35,12 @@ export default function FoodCard({ product, onSelect }) {
     >
       {/* Food Image & Badges */}
       <div className="relative aspect-[4/3] shrink-0 overflow-hidden bg-zinc-100">
-        <img
+        <SafeImage
           src={imageSrc}
           alt={title}
-          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-          loading="lazy"
+          fill
+          sizes="(min-width: 1280px) 20vw, (min-width: 768px) 25vw, (min-width: 640px) 33vw, 50vw"
+          className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
         />
 
         {/* Favorite Heart Button */}
@@ -90,7 +92,7 @@ export default function FoodCard({ product, onSelect }) {
 
         {/* Action button */}
         <div className="pt-2 border-t border-zinc-100 flex items-center justify-between">
-          <span className="text-[11px] text-zinc-400 font-medium">Fresh Tandoor</span>
+          <span className="text-[11px] text-zinc-600 font-medium">Fresh Tandoor</span>
           <button
             type="button"
             onClick={handleQuickAdd}

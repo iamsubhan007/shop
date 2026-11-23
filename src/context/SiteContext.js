@@ -24,10 +24,14 @@ const mapProduct = (p) => ({
 });
 const mapDeal = (d) => ({ ...d, image_url: d.imageUrl, original_price: d.originalPrice, is_deal: true });
 
-export function SiteProvider({ children }) {
-  const [menu, setMenu] = useState({ categories: [], products: [], deals: [] });
-  const [settings, setSettings] = useState(null);
-  const [loading, setLoading] = useState(true);
+// `initial` is the menu and settings the server already rendered into the page (see siteData.js). Starting from it means the
+// first paint has real content (no empty page that jumps when data arrives); the fetch below then refreshes it.
+export function SiteProvider({ children, initial = null }) {
+  const [menu, setMenu] = useState(() => (initial
+    ? { categories: initial.menu.categories, products: initial.menu.products.map(mapProduct), deals: initial.menu.deals.map(mapDeal) }
+    : { categories: [], products: [], deals: [] }));
+  const [settings, setSettings] = useState(initial?.settings ?? null);
+  const [loading, setLoading] = useState(!initial);
   const [error, setError] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -46,8 +50,12 @@ export function SiteProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    // With the server-rendered data already in the page there is no hurry: refresh a few seconds later, after the pictures
+    // have loaded, so the refresh does not compete with them. Without it (server render failed) load straight away.
+    if (!initial) { refresh(); return undefined; }
+    const t = setTimeout(refresh, 4000);
+    return () => clearTimeout(t);
+  }, [refresh, initial]);
 
   return <SiteContext.Provider value={{ ...menu, settings, loading, error, refresh }}>{children}</SiteContext.Provider>;
 }

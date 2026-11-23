@@ -17,8 +17,8 @@ function Footer() {
             </div>
             <h3 className="text-white font-bold text-base">Haq Bahu Naan Shop</h3>
           </div>
-          <p className="text-sm text-zinc-500 leading-relaxed mb-4">
-            Serving authentic, freshly baked naans and more. Visit us in Model Town, Lahore, or order online today.
+          <p className="text-sm text-zinc-400 leading-relaxed mb-4">
+            Serving authentic, freshly baked qeema naan, pizza naan and more. Visit us in Model Town, Lahore, or order online today.
           </p>
           <div className="flex items-center gap-3">
             <a
@@ -99,8 +99,8 @@ function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-zinc-800/60">
         <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-2">
-          <p className="text-xs text-zinc-600">&copy; 2025 Haq Bahu Naan Shop. All rights reserved.</p>
-          <p className="text-xs text-zinc-600">Designed &amp; built by Subhan Butt</p>
+          <p className="text-xs text-zinc-500">&copy; 2025 Haq Bahu Naan Shop. All rights reserved.</p>
+          <p className="text-xs text-zinc-500">Designed &amp; built by Subhan Butt</p>
         </div>
       </div>
     </footer>

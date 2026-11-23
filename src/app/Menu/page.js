@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Download, Search, UtensilsCrossed, Sparkles } from 'lucide-react';
-import Banner from '@/components/banner';
 import Footer from '@/components/footer';
-import ImageCarousel from '@/components/ImageCarousel';
 import FoodCard from '@/components/menu/FoodCard';
-import ProductModal from '@/components/menu/ProductModal';
+import dynamic from 'next/dynamic';
+
+// The product pop-up only appears after a tap, so its code is loaded then instead of with the page.
+const ProductModal = dynamic(() => import('@/components/menu/ProductModal'));
 import { useSite } from '@/context/SiteContext';
 
 export default function MenuPage() {
@@ -44,9 +46,6 @@ export default function MenuPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Banner />
-      <ImageCarousel />
-
       {/* Menu Header Bar */}
       <div className="bg-zinc-950 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800">
         <div>
@@ -55,7 +54,7 @@ export default function MenuPage() {
             Full Tandoor Menu
           </h1>
           <p className="text-zinc-400 text-xs">
-            Authentic freshly baked tandoori naans, stuffed parathas, and sides
+            Qeema naan, pizza naan, cheese naan, stuffed parathas and sides, freshly baked in our tandoor in Model Town, Lahore
           </p>
         </div>
 
@@ -165,9 +164,12 @@ export default function MenuPage() {
           </span>
         )}
         <Link href="/Chat" title="Chat with AI Assistant">
-          <img
+          <Image
             src="/chatbot.png"
             alt="Chat Support"
+            width={56}
+            height={56}
+            sizes="56px"
             className="w-14 h-14 cursor-pointer hover:scale-110 transition-transform drop-shadow-xl"
           />
         </Link>

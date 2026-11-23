@@ -3,8 +3,9 @@
 import React from 'react';
 import { Sparkles, Check, ShoppingCart } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import SafeImage from '@/components/ui/SafeImage';
 
-export default function DealCard({ deal, onSelect }) {
+export default function DealCard({ deal, onSelect, priority = false }) {
   const { addToCart } = useCart();
 
   const handleAddDeal = (e) => {
@@ -33,10 +34,13 @@ export default function DealCard({ deal, onSelect }) {
 
       {/* Image */}
       <div className="relative aspect-[16/9] overflow-hidden bg-zinc-900">
-        <img
+        <SafeImage
           src={deal.image_url}
           alt={deal.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          fill
+          priority={priority}
+          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+          className="object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
         <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between text-white">
