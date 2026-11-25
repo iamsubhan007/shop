@@ -5,8 +5,15 @@ import { useSearchParams } from 'next/navigation';
 import { Loader2, Pencil, Printer, Search, Trash2, X } from 'lucide-react';
 import { api, rs, when, ago } from '@/components/admin/api';
 import { ORDER_STATUSES, PAYMENT_LABELS, TERMINAL, nextStatuses, roleCanTransition, statusColor } from '@/lib/orderStatus';
+import { paymentUnconfirmed } from '@/lib/paymentReminder';
 
 const sel = 'border border-zinc-300 rounded-lg px-2.5 py-2 text-sm bg-white';
+const REMINDER_EMAIL = {
+  sent: (to) => `Reminder emailed to ${to}.`,
+  failed: () => 'The email could not be sent; use WhatsApp.',
+  recent: () => 'An email went a few minutes ago, so no new one was sent.',
+  none: () => 'This order has no email address; use WhatsApp.',
+};
 
 export default function OrdersAdmin() {
   const [f, setF] = useState({ q: '', status: '', type: '', payment: '', from: '', to: '' });
@@ -133,8 +140,17 @@ function Detail({ id, onClose }) {
   const [discVal, setDiscVal] = useState('');
   const [discNote, setDiscNote] = useState('');
 
+  const [reminder, setReminder] = useState(null); // the answer to "Remind customer"
+
   const load = useCallback(() => api(`/api/admin/orders/${id}`).then((d) => setO(d.order)).catch((e) => setErr(e.message)), [id]);
   useEffect(() => { load(); }, [load]);
+
+  const remind = async () => {
+    if (!confirm(`Remind ${o.customerName} about this payment?${o.customerEmail ? ` An email goes to ${o.customerEmail}, and you can also send it on WhatsApp.` : ''}`)) return;
+    setBusy(true); setErr(''); setReminder(null);
+    try { setReminder(await api(`/api/admin/orders/${id}`, { method: 'PATCH', body: { action: 'remind_payment' } })); await load(); } catch (e) { setErr(e.message); }
+    setBusy(false);
+  };
 
   const act = async (body, confirmMsg) => {
     if (confirmMsg && !confirm(confirmMsg)) return;
@@ -315,6 +331,21 @@ function Detail({ id, onClose }) {
             <div className="flex gap-2 print:hidden">
               <button disabled={busy} onClick={() => act({ action: 'payment', decision: 'verify' }, 'Mark this payment as received and confirm the order?')} className="flex-1 bg-emerald-600 text-white font-bold py-2.5 rounded-xl">Payment received ✓</button>
               <button disabled={busy} onClick={() => { const n = prompt('Why is the payment rejected? (customer can resubmit)'); if (n) act({ action: 'payment', decision: 'reject', notes: n }); }} className="flex-1 bg-white border border-red-300 text-red-700 font-bold py-2.5 rounded-xl">Reject</button>
+            </div>
+          )}
+          {paymentUnconfirmed(o) && (
+            <div className="print:hidden space-y-2 border-t pt-2" data-testid="payment-tools">
+              {o.paymentStatus !== 'submitted' && (<>
+                <p className="text-xs text-zinc-500">No transaction ID or screenshot has been sent. If you have checked yourself that the money arrived, you can confirm without it.</p>
+                <button disabled={busy} onClick={() => act({ action: 'payment', decision: 'manual' }, 'Confirm this payment without proof? Only do this if you have seen the money arrive.')} className="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl">Payment received — confirm order</button>
+              </>)}
+              <button disabled={busy} onClick={remind} className="w-full bg-white border border-amber-400 text-amber-800 font-bold py-2.5 rounded-xl">Remind customer about payment</button>
+              {reminder && (
+                <div role="status" className="text-xs bg-amber-50 border border-amber-200 rounded-lg p-2.5 space-y-2">
+                  <p>{REMINDER_EMAIL[reminder.email]?.(reminder.emailTo)} The customer&apos;s order page now asks them to pay or send proof.</p>
+                  {reminder.whatsappUrl && <a href={reminder.whatsappUrl} target="_blank" rel="noreferrer" className="inline-block px-3 py-2 rounded-lg bg-emerald-600 text-white font-semibold">Send it on WhatsApp too</a>}
+                </div>
+              )}
             </div>
           )}
         </section>

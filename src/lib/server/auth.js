@@ -4,6 +4,7 @@ import { cookies, headers } from 'next/headers';
 import { and, eq, gt, isNull, sql } from 'drizzle-orm';
 import { db, schema } from '@/db';
 import { cleanEnv } from '@/lib/env';
+import { retryRead } from '@/lib/dbResilience';
 
 const { profiles, sessions, otpCodes, rateLimits } = schema;
 
@@ -88,11 +89,12 @@ async function sessionProfile(cookieName, kind) {
   const jar = await cookies();
   const token = jar.get(cookieName)?.value;
   if (!token) return null;
-  const [row] = await db
+  // Every signed-in page and request starts here, so a momentary database hiccup is retried instead of crashing it.
+  const [row] = await retryRead(() => db
     .select({ profile: profiles })
     .from(sessions)
     .innerJoin(profiles, eq(profiles.id, sessions.profileId))
-    .where(and(eq(sessions.tokenHash, sha256(token)), eq(sessions.kind, kind), gt(sessions.expiresAt, new Date())));
+    .where(and(eq(sessions.tokenHash, sha256(token)), eq(sessions.kind, kind), gt(sessions.expiresAt, new Date()))));
   if (!row || !row.profile.isActive) return null;
   const { passwordHash, ...safe } = row.profile;
   return safe;

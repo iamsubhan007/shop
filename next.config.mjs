@@ -11,6 +11,22 @@ const nextConfig = {
   turbopack: { root },
   outputFileTracingRoot: root,
   poweredByHeader: false,
+  // Menu PDF printing: these run on the server as they are, and the packed Chromium is shipped with the two routes
+  // that print.
+  serverExternalPackages: ['@sparticuz/chromium', 'playwright-core'],
+  // Never part of a server function: the mobile app, local data, and files that are served or used elsewhere. (The storage
+  // code builds paths from the project folder, which otherwise makes the packager sweep all of it in.)
+  outputFileTracingExcludes: {
+    '/*': ['./mobile/**', './.git/**', './.localdb/**', './storage/**', './public/**', './docs/**', './scripts/**', './drizzle/**', './supabase/**'],
+  },
+  outputFileTracingIncludes: {
+    '/api/menu/pdf': ['./node_modules/@sparticuz/chromium/bin/**'],
+    '/api/admin/menu-pdf/preview': ['./node_modules/@sparticuz/chromium/bin/**'],
+  },
+  // The old hand-made menu file's address now gives the current published menu, so old links never serve old prices.
+  async redirects() {
+    return [{ source: '/Haq-Bahu-MENU.pdf', destination: '/api/menu/pdf', permanent: false }];
+  },
   // Pictures are resized to the screen and sent as AVIF/WebP (Next's image optimizer), and the result is cached for a week.
   images: {
     formats: ['image/avif', 'image/webp'],

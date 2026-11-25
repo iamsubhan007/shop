@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Download, Search, UtensilsCrossed, Sparkles } from 'lucide-react';
+import { Search, UtensilsCrossed, Sparkles } from 'lucide-react';
 import Footer from '@/components/footer';
+import MenuPdfButton from '@/components/MenuPdfButton';
 import FoodCard from '@/components/menu/FoodCard';
 import dynamic from 'next/dynamic';
 
@@ -59,14 +60,7 @@ export default function MenuPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <a
-            href="/Haq-Bahu-MENU.pdf"
-            download
-            className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-xs font-semibold px-3.5 py-2 rounded-xl transition-colors"
-          >
-            <Download size={13} />
-            Download PDF Menu
-          </a>
+          <MenuPdfButton className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-xs font-semibold px-3.5 py-2 rounded-xl transition-colors disabled:opacity-70" />
         </div>
       </div>
 

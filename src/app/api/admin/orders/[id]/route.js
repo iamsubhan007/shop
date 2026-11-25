@@ -8,6 +8,7 @@ import { buildOrderText, dispatchOrderNotification, whatsappConfigured } from '@
 import { ORDER_STATUSES, isOrderAdmin } from '@/lib/orderStatus';
 import { editOrderItems, setOrderDiscount, setOrderEta } from '@/lib/server/orderAdmin';
 import { deleteOrderProofs } from '@/lib/server/proofs';
+import { remindPayment } from '@/lib/server/paymentReminder';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,22 +18,29 @@ export async function GET(request, { params }) {
   const { id } = await params;
   const [order] = await db.select().from(schema.orders).where(eq(schema.orders.id, id));
   if (!order) return NextResponse.json({ error: 'Order not found.' }, { status: 404 });
-  const items = await db.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, id));
-  const history = await db.select().from(schema.orderStatusHistory).where(eq(schema.orderStatusHistory.orderId, id)).orderBy(asc(schema.orderStatusHistory.createdAt));
-  const payments = await db.select().from(schema.paymentSubmissions).where(eq(schema.paymentSubmissions.orderId, id));
-  const [notification] = await db.select().from(schema.notifications).where(eq(schema.notifications.orderId, id));
-  const [feedback] = await db.select().from(schema.orderFeedback).where(eq(schema.orderFeedback.orderId, id));
+  // Read side by side: one after another, each of these adds a round trip to the database before the page can show.
+  const [items, history, payments, [notification], [feedback], waText] = await Promise.all([
+    db.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, id)),
+    db.select().from(schema.orderStatusHistory).where(eq(schema.orderStatusHistory.orderId, id)).orderBy(asc(schema.orderStatusHistory.createdAt)),
+    db.select().from(schema.paymentSubmissions).where(eq(schema.paymentSubmissions.orderId, id)),
+    db.select().from(schema.notifications).where(eq(schema.notifications.orderId, id)),
+    db.select().from(schema.orderFeedback).where(eq(schema.orderFeedback.orderId, id)),
+    buildOrderText(id),
+  ]);
   const { trackingToken, ...safe } = order;
   const canSeeMoney = g.staff.role !== 'kitchen';
   return NextResponse.json({
     order: { ...safe, items, history, payments: canSeeMoney ? payments : [], notification: notification || null,
-      feedback: feedback ? { rating: feedback.rating, comment: feedback.comment, updatedAt: feedback.updatedAt } : null, whatsappConfigured: whatsappConfigured(), waText: await buildOrderText(id) },
+      feedback: feedback ? { rating: feedback.rating, comment: feedback.comment, updatedAt: feedback.updatedAt } : null, whatsappConfigured: whatsappConfigured(), waText },
   });
 }
 
 const patch = z.discriminatedUnion('action', [
   z.object({ action: z.literal('status'), status: z.enum(ORDER_STATUSES), note: z.string().max(300).optional() }),
-  z.object({ action: z.literal('payment'), decision: z.enum(['verify', 'reject']), notes: z.string().max(300).optional() }),
+  // 'manual': the owner/admin checked the money themselves, so no proof or transaction ID is needed.
+  z.object({ action: z.literal('payment'), decision: z.enum(['verify', 'reject', 'manual']), notes: z.string().max(300).optional() }),
+  // Owner/admin only: ask the customer to pay, or to send proof of a payment the shop has not received.
+  z.object({ action: z.literal('remind_payment') }),
   z.object({ action: z.literal('retry_notification') }),
   // Owner/admin only: include or exclude items (quantity 0 removes a line; add puts a product on the order).
   z.object({
@@ -65,6 +73,9 @@ export async function PATCH(request, { params }) {
     if (body.action === 'payment') {
       const o = await reviewPayment(id, body.decision, g.staff, body.notes);
       return NextResponse.json({ success: true, status: o.status, paymentStatus: o.paymentStatus });
+    }
+    if (body.action === 'remind_payment') {
+      return NextResponse.json({ success: true, ...(await remindPayment(id, g.staff)) });
     }
     if (body.action === 'deleteProof') {
       const r = await deleteOrderProofs(id, g.staff);

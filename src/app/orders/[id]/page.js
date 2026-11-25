@@ -3,11 +3,12 @@
 import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
-import { CheckCircle2, Circle, Loader2, MessageCircle, Star, Timer, Upload, XCircle } from 'lucide-react';
+import { CheckCircle2, Circle, Loader2, MessageCircle, Star, Upload, XCircle } from 'lucide-react';
 import { useSite } from '@/context/SiteContext';
 import { useAuth } from '@/context/AuthContext';
 import { CUSTOMER_CANCELLABLE, PAYMENT_LABELS, statusColor, timelineSteps } from '@/lib/orderStatus';
 import { prepareImage } from '@/lib/compressImage';
+import OrderProgressHero from '@/components/OrderProgressHero';
 
 const fmt = (d) => new Date(d).toLocaleString('en-PK', { timeZone: 'Asia/Karachi', dateStyle: 'medium', timeStyle: 'short' });
 
@@ -29,8 +30,6 @@ function OrderView() {
   const [fbBusy, setFbBusy] = useState(false);
   const [fbMsg, setFbMsg] = useState('');
   const [editFb, setEditFb] = useState(false);
-  const [, setTick] = useState(0);
-  useEffect(() => { const t = setInterval(() => setTick((n) => n + 1), 30000); return () => clearInterval(t); }, []); // keeps the countdown moving
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/orders/${id}${token ? `?t=${token}` : ''}`, { cache: 'no-store' });
@@ -103,7 +102,8 @@ function OrderView() {
   const isOwner = user && order.userId === user.id;
   const wa = settings?.shop.whatsapp;
   const waText = encodeURIComponent(`Hello Haq Bahu Tandoor, I need help with my order ${order.orderNumber}.`);
-  const canPay = isOwner && order.paymentMethod !== 'cod' && order.status === 'Payment Pending';
+  const canPay = isOwner && order.canSubmitPayment;
+  const reminded = !dead && order.paymentReminderAt;
   const card = 'bg-white rounded-2xl border border-zinc-200 p-5 shadow-sm';
 
   return (
@@ -119,17 +119,14 @@ function OrderView() {
         <span className={`text-xs font-bold px-3 py-1 rounded-full ${statusColor(order.status)}`}>{order.status}</span>
       </div>
 
-      {order.etaAt && !dead && order.status !== 'Completed' && (() => {
-        const left = Math.ceil((new Date(order.etaAt).getTime() - Date.now()) / 60000);
-        return (
-          <div role="status" data-testid="order-timer" className="flex items-center gap-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 p-4 text-sm">
-            <Timer size={22} className="shrink-0" />
-            {left > 0
-              ? <span><strong>About {left} min left.</strong> We will have your order {order.orderType === 'delivery' ? 'with you' : 'ready'} in about {left} minute{left === 1 ? '' : 's'}.</span>
-              : <span><strong>Almost there.</strong> It is taking a little longer than planned. Thank you for your patience.</span>}
-          </div>
-        );
-      })()}
+      {reminded && (
+        <div role="alert" data-testid="payment-reminder" className="rounded-2xl bg-red-50 border border-red-200 text-red-900 p-4 text-sm">
+          <strong>We have not received your payment of Rs. {order.totalAmount} yet.</strong>
+          <p className="mt-1">Please send it. If you have already sent it, {canPay ? 'add a proof of payment (screenshot or transaction ID) below.' : 'sign in with the account you ordered with to add a proof of payment.'}</p>
+        </div>
+      )}
+
+      {order.etaAt && !dead && <OrderProgressHero order={order} />}
 
       <section className={card} aria-label="Order progress">
         {dead ? (
@@ -168,7 +165,7 @@ function OrderView() {
 
       {canPay && (
         <section className={card}>
-          <h2 className="font-bold text-sm mb-2">Submit your payment details</h2>
+          <h2 className="font-bold text-sm mb-2">{order.paymentStatus === 'submitted' ? 'Send proof of payment' : 'Submit your payment details'}</h2>
           {order.paymentStatus === 'rejected' && <p className="text-xs text-red-700 mb-2">Your last payment details could not be verified. Please check and send them again.</p>}
           <input value={ref} onChange={(e) => setRef(e.target.value)} maxLength={100} placeholder="Transaction / reference ID" className="w-full text-sm p-3 border border-zinc-300 rounded-xl" />
           <label className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border border-zinc-300 cursor-pointer">

@@ -1,10 +1,11 @@
 import 'server-only';
 import crypto from 'node:crypto';
-import { and, eq, inArray, like, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, like, sql } from 'drizzle-orm';
+import { REMINDER_NOTE, paymentUnconfirmed } from '@/lib/paymentReminder';
 import { db, schema } from '@/db';
 import { getSettings, orderingState, deliveryState } from './settings';
 import { evaluateDelivery } from '@/lib/delivery';
-import { PAYMENT_METHODS, nextStatuses, roleCanTransition, canOverrideStatus, CUSTOMER_CANCELLABLE } from '@/lib/orderStatus';
+import { PAYMENT_METHODS, TERMINAL, nextStatuses, roleCanTransition, canOverrideStatus, CUSTOMER_CANCELLABLE } from '@/lib/orderStatus';
 import { audit } from './audit';
 
 const { orders, orderItems, products, categories, deals, dealItems, paymentSubmissions, orderStatusHistory, notifications, stockMovements, coupons, profiles } = schema;
@@ -293,28 +294,66 @@ export async function changeOrderStatus(orderId, to, actor, { note, reason, asCu
   });
 }
 
-/** Verify or reject a manual payment (owner/admin only; caller must enforce role). */
+/**
+ * Verify or reject a manual payment (owner/admin only; caller must enforce role).
+ *  - 'verify' / 'reject': review what the customer submitted.
+ *  - 'manual': the owner/admin checked the money themselves. No transaction ID or screenshot is needed.
+ */
 export async function reviewPayment(orderId, decision, actor, adminNotes) {
   return db.transaction(async (tx) => {
     const [order] = await tx.select().from(orders).where(eq(orders.id, orderId)).for('update');
     if (!order) throw new OrderError('Order not found.', 'not_found', 404);
     if (order.paymentMethod === 'cod') throw new OrderError('Cash on delivery has no payment to verify.', 'bad_request');
-    if (order.paymentStatus !== 'submitted') throw new OrderError('There is no submitted payment to review.', 'bad_request', 409);
-    const verified = decision === 'verify';
-    const [sub] = await tx.select().from(paymentSubmissions).where(and(eq(paymentSubmissions.orderId, orderId), eq(paymentSubmissions.status, 'pending')));
-    if (sub) {
-      await tx.update(paymentSubmissions).set({ status: verified ? 'verified' : 'rejected', adminNotes: adminNotes || null, verifiedAt: new Date(), verifiedBy: actor.id }).where(eq(paymentSubmissions.id, sub.id));
-    }
-    const toStatus = verified ? 'Confirmed' : 'Payment Pending';
+    const manual = decision === 'manual';
+    if (manual) {
+      if (TERMINAL.includes(order.status)) throw new OrderError('This order is already finished.', 'not_allowed', 409);
+      if (!['pending', 'rejected', 'submitted'].includes(order.paymentStatus)) throw new OrderError('This payment is already confirmed.', 'bad_request', 409);
+    } else if (order.paymentStatus !== 'submitted') throw new OrderError('There is no submitted payment to review.', 'bad_request', 409);
+    const verified = manual || decision === 'verify';
+    // A customer may have sent proof more than once (after a reminder): all of them are settled together.
+    await tx.update(paymentSubmissions).set({ status: verified ? 'verified' : 'rejected', adminNotes: adminNotes || null, verifiedAt: new Date(), verifiedBy: actor.id })
+      .where(and(eq(paymentSubmissions.orderId, orderId), eq(paymentSubmissions.status, 'pending')));
+    const waiting = ['Placed', 'Payment Pending', 'Payment Verification'].includes(order.status);
+    const toStatus = verified ? (waiting ? 'Confirmed' : order.status) : 'Payment Pending';
     const [updated] = await tx
       .update(orders)
       .set({ paymentStatus: verified ? 'verified' : 'rejected', status: toStatus, updatedAt: new Date() })
       .where(eq(orders.id, orderId))
       .returning();
-    await tx.insert(orderStatusHistory).values({ orderId, fromStatus: order.status, toStatus, changedBy: actor.id, note: verified ? 'Payment verified' : `Payment rejected${adminNotes ? ': ' + adminNotes : ''}` });
-    await audit(actor, verified ? 'payment.verify' : 'payment.reject', 'order', order.orderNumber, { paymentStatus: order.paymentStatus }, { paymentStatus: updated.paymentStatus }, tx);
+    const note = manual && order.paymentStatus !== 'submitted'
+      ? 'Payment confirmed by staff without proof'
+      : verified ? 'Payment verified' : `Payment rejected${adminNotes ? ': ' + adminNotes : ''}`;
+    await tx.insert(orderStatusHistory).values({ orderId, fromStatus: order.status, toStatus, changedBy: actor.id, note });
+    await audit(actor, manual ? 'payment.verify_manual' : verified ? 'payment.verify' : 'payment.reject', 'order', order.orderNumber, { paymentStatus: order.paymentStatus }, { paymentStatus: updated.paymentStatus }, tx);
     return updated;
   });
+}
+
+/** When the shop last reminded the customer about this order's payment, or null. */
+export async function latestReminder(orderId, conn = db) {
+  const [row] = await conn.select({ at: orderStatusHistory.createdAt }).from(orderStatusHistory)
+    .where(and(eq(orderStatusHistory.orderId, orderId), eq(orderStatusHistory.note, REMINDER_NOTE)))
+    .orderBy(desc(orderStatusHistory.createdAt)).limit(1);
+  return row?.at ?? null;
+}
+
+/**
+ * What the customer may do about payment right now.
+ *  - reminderAt: the shop's unanswered reminder (null once the customer sends something after it)
+ *  - canSubmit:  whether the order page offers the form for a transaction ID / screenshot
+ */
+export async function paymentState(order, conn = db) {
+  if (!paymentUnconfirmed(order)) return { reminderAt: null, canSubmit: false };
+  let reminderAt = await latestReminder(order.id, conn);
+  if (reminderAt) {
+    const [sent] = await conn.select({ at: paymentSubmissions.submittedAt }).from(paymentSubmissions)
+      .where(eq(paymentSubmissions.orderId, order.id)).orderBy(desc(paymentSubmissions.submittedAt)).limit(1);
+    if (sent?.at && sent.at >= reminderAt) reminderAt = null;
+  }
+  const canSubmit = (order.paymentStatus !== 'submitted' && order.status === 'Payment Pending')
+    // Details were sent but the money cannot be found: after a reminder the customer may add proof.
+    || (order.paymentStatus === 'submitted' && order.status === 'Payment Verification' && !!reminderAt);
+  return { reminderAt, canSubmit };
 }
 
 /** Customer submits (or resubmits) payment details for an existing prepaid order. */
@@ -322,13 +361,12 @@ export async function submitPayment(orderId, customer, { reference, proofFile })
   return db.transaction(async (tx) => {
     const [order] = await tx.select().from(orders).where(and(eq(orders.id, orderId), eq(orders.userId, customer.id))).for('update');
     if (!order) throw new OrderError('Order not found.', 'not_found', 404);
-    if (order.paymentMethod === 'cod' || !['pending', 'rejected'].includes(order.paymentStatus) || order.status !== 'Payment Pending') {
-      throw new OrderError('Payment cannot be submitted for this order.', 'not_allowed', 409);
-    }
+    if (!(await paymentState(order, tx)).canSubmit) throw new OrderError('Payment cannot be submitted for this order.', 'not_allowed', 409);
     if (!reference?.trim() && !proofFile) throw new OrderError('Enter the transaction ID or upload a screenshot.', 'bad_request');
+    const again = order.paymentStatus === 'submitted';
     await tx.insert(paymentSubmissions).values({ orderId, userId: customer.id, paymentMethod: order.paymentMethod, transactionReference: reference?.trim() || 'Proof uploaded', proofImageUrl: proofFile || null, status: 'pending' });
     const [updated] = await tx.update(orders).set({ paymentStatus: 'submitted', status: 'Payment Verification', paymentReference: reference?.trim() || order.paymentReference, paymentProofUrl: proofFile || order.paymentProofUrl, updatedAt: new Date() }).where(eq(orders.id, orderId)).returning();
-    await tx.insert(orderStatusHistory).values({ orderId, fromStatus: order.status, toStatus: 'Payment Verification', note: 'Customer submitted payment details' });
+    await tx.insert(orderStatusHistory).values({ orderId, fromStatus: order.status, toStatus: 'Payment Verification', note: again ? 'Customer sent proof after a reminder' : 'Customer submitted payment details' });
     return updated;
   });
 }

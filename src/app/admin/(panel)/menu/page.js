@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, Loader2, Plus, Search, Trash2, X } from 'lucide-react';
 import { api, rs } from '@/components/admin/api';
 import { prepareImage } from '@/lib/compressImage';
+import { fromShopInput, toShopInput } from '@/lib/shopTime';
 
 const field = 'w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm';
 
@@ -48,15 +49,16 @@ export default function MenuAdmin() {
         <h2 className="font-bold text-sm mb-3">Categories</h2>
         <ul className="flex flex-wrap gap-2 mb-3">
           {cats.map((c) => (
-            <li key={c.id} className={`flex items-center gap-1.5 text-xs border rounded-full pl-3 pr-1.5 py-1 ${c.isPaused ? 'bg-amber-50 border-amber-300' : ''}`}>
-              {c.name}
+            <li key={c.id} className={`flex items-center gap-1.5 text-xs border rounded-full pl-3 pr-1.5 py-1 ${c.isActive === false ? 'bg-zinc-100 text-zinc-400' : c.isPaused ? 'bg-amber-50 border-amber-300' : ''}`}>
+              {c.name}{c.isActive === false && ' (hidden)'}
+              <button onClick={() => { if (c.isActive === false || confirm(`Hide "${c.name}"? It and its items disappear from the website, the app and the menu PDF.`)) catPatch(c.id, { isActive: c.isActive === false }); }} className="underline text-zinc-500">{c.isActive === false ? 'publish' : 'hide'}</button>
               <button onClick={() => catPatch(c.id, { isPaused: !c.isPaused })} className="underline text-zinc-500">{c.isPaused ? 'resume' : 'pause'}</button>
               <button onClick={() => catDel(c)} aria-label={`Delete ${c.name}`} className="p-1 text-red-600"><Trash2 size={12} /></button>
             </li>
           ))}
         </ul>
         <div className="flex gap-2"><input value={catName} onChange={(e) => setCatName(e.target.value)} placeholder="New category name" className={field + ' max-w-xs'} /><button onClick={addCat} className="px-4 py-2 border rounded-lg text-sm font-semibold">Add</button></div>
-        <p className="text-[11px] text-zinc-400 mt-2">“Pause” hides a whole category from ordering temporarily.</p>
+        <p className="text-[11px] text-zinc-400 mt-2">“Pause” stops ordering from a category for a while. “Hide” removes it from the website, the app and the menu PDF until you publish it again.</p>
       </section>
 
       <div className="flex flex-wrap gap-2">
@@ -91,7 +93,7 @@ function ProductForm({ product, cats, onClose, onSaved }) {
     name: product.name || '', description: product.description || '', price: product.price ?? '', compareAtPrice: product.compareAtPrice ?? '',
     categoryId: product.categoryId || '', imageUrl: product.imageUrl || '', isFeatured: !!product.isFeatured,
     trackStock: !!product.trackStock, stockQty: product.stockQty ?? 0, lowStockThreshold: product.lowStockThreshold ?? 5,
-    unavailableUntil: product.unavailableUntil ? new Date(product.unavailableUntil).toISOString().slice(0, 16) : '',
+    unavailableUntil: toShopInput(product.unavailableUntil),
   });
   const [adj, setAdj] = useState({ delta: '', reason: '' });
   const [err, setErr] = useState('');
@@ -115,7 +117,7 @@ function ProductForm({ product, cats, onClose, onSaved }) {
       compareAtPrice: f.compareAtPrice === '' ? null : Number(f.compareAtPrice),
       categoryId: f.categoryId || null, imageUrl: f.imageUrl || null, isFeatured: f.isFeatured,
       trackStock: f.trackStock, lowStockThreshold: Number(f.lowStockThreshold),
-      unavailableUntil: f.unavailableUntil ? new Date(f.unavailableUntil).toISOString() : null,
+      unavailableUntil: fromShopInput(f.unavailableUntil),
       ...(isNew ? { stockQty: Number(f.stockQty) } : {}),
     };
     if (!isNew && adj.delta !== '' && Number(adj.delta) !== 0) body.stockAdjust = { delta: Number(adj.delta), reason: adj.reason };
@@ -141,7 +143,7 @@ function ProductForm({ product, cats, onClose, onSaved }) {
           <div className="flex items-center gap-3 mt-1">{f.imageUrl && <img src={f.imageUrl} alt="" className="w-16 h-16 rounded-lg object-cover border" />}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} /></div>
         </div>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.isFeatured} onChange={(e) => set('isFeatured', e.target.checked)} className="w-5 h-5" /> Show as popular / featured</label>
-        <label className="block text-xs font-semibold">Temporarily unavailable until (turns back on by itself)<input type="datetime-local" value={f.unavailableUntil} onChange={(e) => set('unavailableUntil', e.target.value)} className={field} /></label>
+        <label className="block text-xs font-semibold">Temporarily unavailable until, shop time (turns back on by itself)<input type="datetime-local" value={f.unavailableUntil} onChange={(e) => set('unavailableUntil', e.target.value)} className={field} /></label>
         <fieldset className="border rounded-xl p-3 space-y-2">
           <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={f.trackStock} onChange={(e) => set('trackStock', e.target.checked)} className="w-5 h-5" /> Count stock for this item</label>
           {f.trackStock && (

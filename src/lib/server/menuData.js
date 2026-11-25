@@ -2,6 +2,7 @@ import 'server-only';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import { db, schema } from '@/db';
 import { productOrderable } from '@/lib/server/orders';
+import { retryRead } from '@/lib/dbResilience';
 
 const { categories, products, deals } = schema;
 
@@ -10,7 +11,11 @@ const { categories, products, deals } = schema;
  * Shared by that API route and by the server-rendered pages, so the HTML a visitor (or a search engine, or an AI
  * assistant) receives already contains the menu instead of an empty page that fills in after JavaScript runs.
  */
-export async function getMenuData() {
+export function getMenuData() {
+  return retryRead(readMenu);
+}
+
+async function readMenu() {
   const now = new Date();
   const cats = await db.select().from(categories).where(eq(categories.isActive, true)).orderBy(asc(categories.sortOrder));
   const rows = await db
@@ -19,7 +24,7 @@ export async function getMenuData() {
     .leftJoin(categories, eq(categories.id, products.categoryId))
     .where(isNull(products.deletedAt))
     .orderBy(asc(products.sortOrder), asc(products.name));
-  const dealRows = await db.select().from(deals).where(and(eq(deals.isActive, true), isNull(deals.deletedAt)));
+  const dealRows = await db.select().from(deals).where(and(eq(deals.isActive, true), isNull(deals.deletedAt))).orderBy(asc(deals.createdAt));
 
   const items = rows
     .filter((r) => r.catActive !== false)

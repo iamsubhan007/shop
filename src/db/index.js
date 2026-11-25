@@ -1,6 +1,7 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schema';
+import { serverlessDatabaseUrl } from '@/lib/dbResilience';
 
 let dbInstance = null;
 
@@ -25,11 +26,12 @@ export function getDb() {
   }
 
   try {
-    const client = postgres(connectionString, {
-      max: 10,
+    const client = postgres(serverlessDatabaseUrl(connectionString), {
+      max: process.env.VERCEL ? 5 : 10,
       idle_timeout: 20,
+      max_lifetime: 60 * 10,
       connect_timeout: 10,
-      prepare: false,
+      prepare: false, // required by the transaction pooler
     });
     dbInstance = drizzle(client, { schema });
     return dbInstance;

@@ -1,0 +1,1633 @@
+{
+ "/api/admin/orders": {
+  "total": 370,
+  "page": 1,
+  "pages": 15,
+  "orders": [
+   {
+    "id": "d52e3970-7f49-49d5-ad75-388152de5aea",
+    "orderNumber": "HBT-261126-031",
+    "userId": "c5d7e995-2824-4ca7-a921-92477ef5fb92",
+    "idempotencyKey": "rtp-1795648639438-0.014266702043070567",
+    "orderType": "pickup",
+    "status": "Cancelled",
+    "customerName": "Rider Tester",
+    "customerPhone": "03001234567",
+    "customerEmail": "rt1795648469970@example.com",
+    "deliveryAddress": null,
+    "deliveryLat": null,
+    "deliveryLng": null,
+    "distanceKm": null,
+    "subtotal": 500,
+    "discountAmount": 0,
+    "couponCode": null,
+    "deliveryFee": 0,
+    "totalAmount": 500,
+    "paymentStatus": "pending",
+    "paymentMethod": "bank_transfer",
+    "paymentReference": null,
+    "paymentProofUrl": null,
+    "specialInstructions": null,
+    "cancelReason": "Cancelled by customer",
+    "etaAt": null,
+    "manualDiscount": "0.00",
+    "createdAt": "2026-11-25T23:17:19.690Z",
+    "updatedAt": "2026-11-25T23:17:19.836Z",
+    "feedbackRating": null,
+    "notification": null,
+    "items": [
+     {
+      "title": "Nutella Naan",
+      "quantity": 1,
+      "notes": null,
+      "unitPrice": 500
+     }
+    ]
+   },
+   {
+    "id": "9badbda5-9db2-4ee7-892b-e713bb86ba3c",
+    "orderNumber": "HBT-261126-030",
+    "userId": "c5d7e995-2824-4ca7-a921-92477ef5fb92",
+    "idempotencyKey": "rt-1795648628516-0.5509639731906677",
+    "orderType": "delivery",
+    "status": "Cancelled",
+    "customerName": "Rider Tester",
+    "customerPhone": "03001234567",
+    "customerEmail": "rt1795648469970@example.com",
+    "deliveryAddress": "House 1, N Block, Model Town",
+    "deliveryLat": "31.4851319",
+    "deliveryLng": "74.3147178",
+    "distanceKm": "0.945",
+    "subtotal": 1000,
+    "discountAmount": 0,
+    "couponCode": null,
+    "deliveryFee": 100,
+    "totalAmount": 1100,
+    "paymentStatus": "cod_pending",
+    "paymentMethod": "cod",
+    "paymentReference": null,
+    "paymentProofUrl": null,
+    "specialInstructions": null,
+    "cancelReason": "test cleanup",
+    "etaAt": null,
+    "manualDiscount": "0.00",
+    "createdAt": "2026-11-25T23:17:08.712Z",
+    "updatedAt": "2026-11-25T23:17:20.015Z",
+    "feedbackRating": null,
+    "notification": null,
+    "items": [
+     {
+      "title": "Nutella Naan",
+      "quantity": 2,
+      "notes": null,
+      "unitPrice": 500
+     }
+    ]
+   },
+   {
+    "id": "1b60bec1-19f5-40fb-a78d-528388ae35cb",
+    "orderNumber": "HBT-261126-028",
+    "userId": "c5d7e995-2824-4ca7-a921-92477ef5fb92",
+    "idempotencyKey": "rt-1795648617393-0.9479570745935554",
+    "orderType": "delivery",
+    "status": "Completed",
+    "customerName": "Rider Tester",
+    "customerPhone": "03001234567",
+    "customerEmail": "rt1795648469970@example.com",
+    "deliveryAddress": "House 1, N Block, Model Town",
+    "deliveryLat": "31.4851319",
+    "deliveryLng": "74.3147178",
+    "distanceKm": "0.945",
+    "subtotal": 1000,
+    "discountAmount": 40,
+    "couponCode": null,
+    "deliveryFee": 100,
+    "totalAmount": 1060,
+    "paymentStatus": "cod_collected",
+    "paymentMethod": "cod",
+    "paymentReference": null,
+    "paymentProofUrl": null,
+    "specialInstructions": null,
+    "cancelReason": null,
+    "etaAt": null,
+    "manualDiscount": "40.00",
+    "createdAt": "2026-11-25T23:16:57.442Z",
+    "updatedAt": "2026-11-25T23:16:58.014Z",
+    "feedbackRating": null,
+    "notification": null,
+    "items": [
+     {
+      "title": "Nutella Naan",
+      "quantity": 2,
+      "notes": null,
+      "unitPrice": 500
+     }
+    ]
+   },
+   {
+    "id": "9a4edddf-e2e5-40ce-8540-9442a07fdc7c",
+    "orderNumber": "HBT-261126-027",
+    "userId": "c5d7e995-2824-4ca7-a921-92477ef5fb92",
+    "idempotencyKey": "rtp-1795648616723-0.2353917587628227",
+    "orderType": "pickup",
+    "status": "Completed",
+    "customerName": "Rider Tester",
+    "customerPhone": "03001234567",
+    "customerEmail": "rt1795648469970@example.com",
+    "deliveryAddress": null,
+    "deliveryLat": null,
+    "deliveryLng": null,
+    "distanceKm": null,
+    "subtotal": 500,
+    "discountAmount": 50,
+    "couponCode": null,
+    "deliveryFee": 0,
+    "totalAmount": 450,
+    "paymentStatus": "verified",
+    "paymentMethod": "bank_transfer",
+    "paymentReference": "RT-PAID-1",
+    "paymentProofUrl": null,
+    "specialInstructions": null,
+    "cancelReason": null,
+    "etaAt": null,
+    "manualDiscount": "50.00",
+    "createdAt": "2026-11-25T23:16:56.806Z",
+    "updatedAt": "2026-11-25T23:16:57.304Z",
+    "feedbackRating": null,
+    "notification": null,
+    "items": [
+     {
+      "title": "Nutella Naan",
+      "quantity": 1,
+      "notes": null,
+      "unitPrice": 500
+     }
+    ]
+   },
+   {
+    "id": "c1935dcd-9c66-4efb-807e-466656a74159",
+    "orderNumber": "HBT-261126-026",
+    "userId": "c5d7e995-2824-4ca7-a921-92477ef5fb92",
+    "idempotencyKey": "rt-1795648614071-0.5092428158552469",
+    "orderType": "delivery",
+    "status": "Confirmed",
+    "customerName": "Rider Tester",
+    "customerPhone": "03001234567",
+    "customerEmail": "rt1795648469970@example.com",
+    "deliveryAddress": "House 1, N Block, Model Town",
+    "deliveryLat": "31.4851319",
+    "deliveryLng": "74.3147178",
+    "distanceKm": "0.945",
+    "subtotal": 1000,
+    "discountAmount": 0,
+    "couponCode": null,
+    "deliveryFee": 100,
+    "totalAmount": 1100,
+    "paymentStatus": "cod_pending",
+    "paymentMethod": "cod",
+    "paymentReference": null,
+    "paymentProofUrl": null,
+    "specialInstructions": null,
+    "cancelReason": null,
+    "etaAt": null,
+    "manualDiscount": "0.00",
+    "createdAt": "2026-11-25T23:16:54.123Z",
+    "updatedAt": "2026-11-25T23:16:56.700Z",
+    "feedbackRating": null,
+    "notification": null,
+    "items": [
+     {
+      "title": "Nutella Naan",
+      "quantity": 2,
+      "notes": null,
+      "unitPrice": 500
+     }
+    ]
+   },
+   {
+    "id": "8467e49f-9a5c-4e51-8db4-05d64e397448",
+    "orderNumber": "HBT-261126-025",
+    "userId": "c5d7e995-2824-4ca7-a921-92477ef5fb92",
+    "idempotencyKey": "rtp-1795648613789-0.5578340471841147",
+    "orderType": "pickup",
+    "status": "Cancelled",
+    "customerName": "Rider Tester",
+    "customerPhone": "03001234567",
+    "customerEmail": "rt1795648469970@example.com",
+    "deliveryAddress": null,
+    "deliveryLat": null,
+    "deliveryLng": null,
+    "distanceKm": null,
+    "subtotal": 500,
+    "discountAmount": 0,
+    "couponCode": null,
+    "deliveryFee": 0,
+    "totalAmount": 500,
+    "paymentStatus": "pending",
+    "paymentMethod": "bank_transfer",
+    "paymentReference": null,
+    "paymentProofUrl": null,
+    "specialInstructions": null,
+    "cancelReason": "test cleanup",
+    "etaAt": null,
+    "manualDiscount": "0.00",
+    "createdAt": "2026-11-25T23:16:53.840Z",
+    "updatedAt": "2026-11-25T23:16:54.036Z",
+    "feedbackRating": null,
+    "notification": null,
+    "items": [
+     {
+      "title": "Nutella Naan",
+      "quantity": 1,
+      "notes": null,
+      "unitPrice": 500
+     }
+    ]
+   }
+  ]
+ },
+ "/api/admin/orders/d52e3970-7f49-49d5-ad75-388152de5aea": {
+  "order": {
+   "id": "d52e3970-7f49-49d5-ad75-388152de5aea",
+   "orderNumber": "HBT-261126-031",
+   "userId": "c5d7e995-2824-4ca7-a921-92477ef5fb92",
+   "idempotencyKey": "rtp-1795648639438-0.014266702043070567",
+   "orderType": "pickup",
+   "status": "Cancelled",
+   "customerName": "Rider Tester",
+   "customerPhone": "03001234567",
+   "customerEmail": "rt1795648469970@example.com",
+   "deliveryAddress": null,
+   "deliveryLat": null,
+   "deliveryLng": null,
+   "distanceKm": null,
+   "subtotal": "500.00",
+   "discountAmount": "0.00",
+   "couponCode": null,
+   "deliveryFee": "0.00",
+   "totalAmount": "500.00",
+   "paymentStatus": "pending",
+   "paymentMethod": "bank_transfer",
+   "paymentReference": null,
+   "paymentProofUrl": null,
+   "specialInstructions": null,
+   "cancelReason": "Cancelled by customer",
+   "etaAt": null,
+   "manualDiscount": "0.00",
+   "createdAt": "2026-11-25T23:17:19.690Z",
+   "updatedAt": "2026-11-25T23:17:19.836Z",
+   "items": [
+    {
+     "id": "709eb209-0049-4fac-88aa-40e7567da13f",
+     "orderId": "d52e3970-7f49-49d5-ad75-388152de5aea",
+     "productId": "39e71aed-4180-465a-a5a3-dd9935d381ed",
+     "dealId": null,
+     "itemTitle": "Nutella Naan",
+     "unitPrice": "500.00",
+     "quantity": 1,
+     "subtotalPrice": "500.00",
+     "notes": null,
+     "createdAt": "2026-11-25T23:17:19.690Z"
+    }
+   ],
+   "history": [
+    {
+     "id": "b7752bce-0d09-4ec3-bb07-ece1ebeb6670",
+     "orderId": "d52e3970-7f49-49d5-ad75-388152de5aea",
+     "fromStatus": null,
+     "toStatus": "Payment Pending",
+     "changedBy": null,
+     "note": "Order placed",
+     "createdAt": "2026-11-25T23:17:19.690Z"
+    },
+    {
+     "id": "4db1ff58-4bb6-427e-b7bc-d16f09908609",
+     "orderId": "d52e3970-7f49-49d5-ad75-388152de5aea",
+     "fromStatus": "Payment Pending",
+     "toStatus": "Cancelled",
+     "changedBy": null,
+     "note": "Cancelled by customer",
+     "createdAt": "2026-11-25T23:17:19.833Z"
+    }
+   ],
+   "payments": [],
+   "notification": {
+    "id": "b71948ac-9e45-4c1d-9bfc-1004dfa549a9",
+    "orderId": "d52e3970-7f49-49d5-ad75-388152de5aea",
+    "channel": "whatsapp",
+    "kind": "order_created",
+    "status": "pending",
+    "attempts": 0,
+    "lastError": null,
+    "providerMessageId": null,
+    "nextAttemptAt": null,
+    "sentAt": null,
+    "createdAt": "2026-11-25T23:17:19.690Z"
+   },
+   "feedback": null,
+   "whatsappConfigured": false,
+   "waText": "*NEW ORDER HBT-261126-031*\n26/11/2026, 4:17:19 am\n\nCustomer: Rider Tester\nPhone: 03001234567\nType: Pickup\n\n1 x Nutella Naan - Rs. 500\n\nSubtotal: Rs. 500\n*Total: Rs. 500*\nPayment: Bank Transfer (pending)"
+  }
+ },
+ "/api/admin/stats": {
+  "range": {
+   "from": "2026-10-27T23:18:14.601Z",
+   "to": "2026-11-26T23:18:14.601Z"
+  },
+  "totals": {
+   "total": 370,
+   "today": 28,
+   "pending": 87,
+   "completed": 106,
+   "cancelled": 177,
+   "gross": 183340,
+   "collected": 135930,
+   "collected_today": 10910,
+   "pending_amount": 47410,
+   "verified_prepaid": 56450,
+   "cod_collected": 79480,
+   "avgOrder": 950
+  },
+  "daily": [
+   {
+    "day": "2026-11-07",
+    "orders": 9,
+    "revenue": 4300
+   },
+   {
+    "day": "2026-11-09",
+    "orders": 3,
+    "revenue": 2100
+   },
+   {
+    "day": "2026-11-11",
+    "orders": 54,
+    "revenue": 21790
+   },
+   {
+    "day": "2026-11-15",
+    "orders": 184,
+    "revenue": 64350
+   },
+   {
+    "day": "2026-11-23",
+    "orders": 51,
+    "revenue": 15110
+   },
+   {
+    "day": "2026-11-25",
+    "orders": 41,
+    "revenue": 17370
+   },
+   {
+    "day": "2026-11-26",
+    "orders": 28,
+    "revenue": 10910
+   }
+  ],
+  "byStatus": [
+   {
+    "status": "Cancelled",
+    "n": 177
+   },
+   {
+    "status": "Completed",
+    "n": 106
+   },
+   {
+    "status": "Confirmed",
+    "n": 73
+   },
+   {
+    "status": "Payment Pending",
+    "n": 7
+   },
+   {
+    "status": "Placed",
+    "n": 6
+   },
+   {
+    "status": "Payment Verification",
+    "n": 1
+   }
+  ],
+  "byPayment": [
+   {
+    "method": "cod",
+    "n": 105
+   },
+   {
+    "method": "bank_transfer",
+    "n": 88
+   }
+  ],
+  "topProducts": [
+   {
+    "title": "Nutella Naan",
+    "qty": 290,
+    "revenue": 145000
+   },
+   {
+    "title": "Tandoori Pizza Naan",
+    "qty": 44,
+    "revenue": 22000
+   },
+   {
+    "title": "E2E Combo",
+    "qty": 5,
+    "revenue": 4950
+   },
+   {
+    "title": "Tandoori Shawarma Naan",
+    "qty": 1,
+    "revenue": 400
+   },
+   {
+    "title": "Crazy Deal 1",
+    "qty": 1,
+    "revenue": 1050
+   }
+  ]
+ },
+ "/api/admin/products": {
+  "products": [
+   {
+    "id": "39e71aed-4180-465a-a5a3-dd9935d381ed",
+    "categoryId": "8f3880aa-2306-44f0-b0e2-a524be596304",
+    "name": "Nutella Naan",
+    "description": "Freshly baked warm fluffy naan loaded with rich molten Nutella.",
+    "price": 500,
+    "compareAtPrice": null,
+    "isAvailable": true,
+    "isFeatured": true,
+    "isSoldOut": false,
+    "unavailableUntil": null,
+    "trackStock": false,
+    "stockQty": 0,
+    "lowStockThreshold": 5,
+    "sortOrder": 0,
+    "imageUrl": "/Nutella.jpg",
+    "additionalImages": [
+     "/Nutella.jpg"
+    ],
+    "genre": "Special",
+    "deletedAt": null,
+    "createdAt": "2026-11-07T11:11:30.128Z",
+    "updatedAt": "2026-11-25T23:17:19.714Z"
+   },
+   {
+    "id": "aa66cef9-a5e4-44af-b128-6b0c6a64d803",
+    "categoryId": "8f3880aa-2306-44f0-b0e2-a524be596304",
+    "name": "Tandoori Pizza Naan",
+    "description": "Freshly baked fusion naan stuffed with cheese, chicken chunks, and signature pizza sauce.",
+    "price": 500,
+    "compareAtPrice": null,
+    "isAvailable": true,
+    "isFeatured": true,
+    "isSoldOut": false,
+    "unavailableUntil": null,
+    "trackStock": false,
+    "stockQty": 0,
+    "lowStockThreshold": 5,
+    "sortOrder": 1,
+    "imageUrl": "/pizza_naan.jpg",
+    "additionalImages": [
+     "/pizza_naan.jpg"
+    ],
+    "genre": "Special",
+    "deletedAt": null,
+    "createdAt": "2026-11-07T11:11:30.130Z",
+    "updatedAt": "2026-11-07T11:11:30.130Z"
+   },
+   {
+    "id": "969934fb-cd63-4d0e-ad12-5740a8c83f8f",
+    "categoryId": "8f3880aa-2306-44f0-b0e2-a524be596304",
+    "name": "Tandoori Shawarma Naan",
+    "description": "Freshly baked naan filled with spiced shawarma chicken and garlic yogurt spread.",
+    "price": 400,
+    "compareAtPrice": null,
+    "isAvailable": true,
+    "isFeatured": true,
+    "isSoldOut": false,
+    "unavailableUntil": null,
+    "trackStock": false,
+    "stockQty": 0,
+    "lowStockThreshold": 5,
+    "sortOrder": 2,
+    "imageUrl": "/shawarma.jpg",
+    "additionalImages": [
+     "/shawarma.jpg"
+    ],
+    "genre": "Special",
+    "deletedAt": null,
+    "createdAt": "2026-11-07T11:11:30.131Z",
+    "updatedAt": "2026-11-07T11:11:30.131Z"
+   },
+   {
+    "id": "af15bfcf-dff3-4e22-9e90-86333d906137",
+    "categoryId": "8f3880aa-2306-44f0-b0e2-a524be596304",
+    "name": "Cheese Naan",
+    "description": "Freshly baked naan oozing with melted mozzarella and cheddar cheese blend.",
+    "price": 400,
+    "compareAtPrice": null,
+    "isAvailable": true,
+    "isFeatured": true,
+    "isSoldOut": false,
+    "unavailableUntil": null,
+    "trackStock": false,
+    "stockQty": 0,
+    "lowStockThreshold": 5,
+    "sortOrder": 3,
+    "imageUrl": "/cheese.jpg",
+    "additionalImages": [
+     "/cheese naan.png"
+    ],
+    "genre": "Special",
+    "deletedAt": null,
+    "createdAt": "2026-11-07T11:11:30.131Z",
+    "updatedAt": "2026-11-07T11:11:30.131Z"
+   },
+   {
+    "id": "03e1f518-4df6-4dae-b4ed-33b3aafc8d34",
+    "categoryId": "d04a83ef-83b0-4b61-a2ab-fb5436ab2302",
+    "name": "Special Chicken Cheese Makhan Rogni Naan",
+    "description": "Special chicken stuffing, loaded cheese, melted butter glaze, and sesame seeds.",
+    "price": 670,
+    "compareAtPrice": null,
+    "isAvailable": true,
+    "isFeatured": true,
+    "isSoldOut": false,
+    "unavailableUntil": null,
+    "trackStock": false,
+    "stockQty": 0,
+    "lowStockThreshold": 5,
+    "sortOrder": 4,
+    "imageUrl": "/chicken naan.jpg",
+    "additionalImages": [
+     "/chicken naan.jpg"
+    ],
+    "genre": "Chicken",
+    "deletedAt": null,
+    "createdAt": "2026-11-07T11:11:30.132Z",
+    "updatedAt": "2026-11-07T11:11:30.132Z"
+   },
+   {
+    "id": "87fbd051-ee17-4316-a234-0884585aba7c",
+    "categoryId": "d04a83ef-83b0-4b61-a2ab-fb5436ab2302",
+    "name": "Special Chicken Achaari Makhan Rogni Naan",
+    "description": "Tangy achar spices combined with tender chicken and buttery rogani naan.",
+    "price": 620,
+    "compareAtPrice": null,
+    "isAvailable": true,
+    "isFeatured": false,
+    "isSoldOut": false,
+    "unavailableUntil": null,
+    "trackStock": false,
+    "stockQty": 0,
+    "lowStockThreshold": 5,
+    "sortOrder": 5,
+    "imageUrl": "/chicken naan.jpg",
+    "additionalImages": [
+     "/chicken naan.jpg"
+    ],
+    "genre": "Chicken",
+    "deletedAt": null,
+    "createdAt": "2026-11-07T11:11:30.133Z",
+    "updatedAt": "2026-11-07T11:11:30.133Z"
+   },
+   {
+    "id": "982e9e6c-b490-4934-9296-0a16f11a4f02",
+    "categoryId": "d04a83ef-83b0-4b61-a2ab-fb5436ab2302",
+    "name": "Special Chicken Makhan Rogni Naan",
+    "description": "Butter-brushed chicken rogani naan baked in traditional clay tandoor.",
+    "price": 570,
+    "compareAtPrice": null,
+    "isAvailable": true,
+    "isFeatured": false,
+    "isSoldOut": false,
+    "unavailableUntil": null,
+    "trackStock": false,
+    "stockQty": 0,
+    "lowStockThreshold": 5,
+    "sortOrder": 6,
+    "imageUrl": "/chicken naan.jpg",
+    "additionalImages": [
+     "/chicken naan.jpg"
+    ],
+    "genre": "Chicken",
+    "deletedAt": null,
+    "createdAt": "2026-11-07T11:11:30.134Z",
+    "updatedAt": "2026-11-07T11:11:30.134Z"
+   },
+   {
+    "id": "39707b38-a2d8-451e-95bb-bb3b294b42ac",
+    "categoryId": "d04a83ef-83b0-4b61-a2ab-fb5436ab2302",
+    "name": "Chicken Cheese Makhan Naan",
+    "description": "Melt-in-mouth chicken and cheese naan topped with fresh country butter.",
+    "price": 470,
+    "compareAtPrice": null,
+    "isAvailable": true,
+    "isFeatured": true,
+    "isSoldOut": false,
+    "unavailableUntil": null,
+    "trackStock": false,
+    "stockQty": 0,
+    "lowStockThreshold": 5,
+    "sortOrder": 7,
+    "imageUrl": "/chicken naan.jpg",
+    "additionalImages": [
+     "/chicken naan.jpg"
+    ],
+    "genre": "Chicken",
+    "deletedAt": null,
+    "createdAt": "2026-11-07T11:11:30.135Z",
+    "updatedAt": "2026-11-07T11:11:30.135Z"
+   }
+  ]
+ },
+ "/api/admin/categories": {
+  "categories": [
+   {
+    "id": "8f3880aa-2306-44f0-b0e2-a524be596304",
+    "name": "Special Items",
+    "slug": "special-items",
+    "description": null,
+    "sortOrder": 1,
+    "isActive": true,
+    "isPaused": false,
+    "createdAt": "2026-11-07T11:11:30.116Z"
+   },
+   {
+    "id": "d04a83ef-83b0-4b61-a2ab-fb5436ab2302",
+    "name": "Chicken Naan",
+    "slug": "chicken-naan",
+    "description": null,
+    "sortOrder": 2,
+    "isActive": true,
+    "isPaused": false,
+    "createdAt": "2026-11-07T11:11:30.119Z"
+   },
+   {
+    "id": "531a5604-3eae-4927-8ecf-b72b19a5ee9e",
+    "name": "Beef Qeema Naan",
+    "slug": "beef-qeema-naan",
+    "description": null,
+    "sortOrder": 3,
+    "isActive": true,
+    "isPaused": false,
+    "createdAt": "2026-11-07T11:11:30.120Z"
+   },
+   {
+    "id": "a08c2a84-f4e2-4c3f-b282-cd288ca0fa61",
+    "name": "Mutton Naan",
+    "slug": "mutton-naan",
+    "description": null,
+    "sortOrder": 4,
+    "isActive": true,
+    "isPaused": false,
+    "createdAt": "2026-11-07T11:11:30.121Z"
+   },
+   {
+    "id": "9a0ba695-b692-4017-9f29-96c34531e969",
+    "name": "Rogni Naan",
+    "slug": "rogni-naan",
+    "description": null,
+    "sortOrder": 5,
+    "isActive": true,
+    "isPaused": false,
+    "createdAt": "2026-11-07T11:11:30.122Z"
+   },
+   {
+    "id": "07fd0f7c-2880-4132-8dca-c2fe8fcf53d8",
+    "name": "Aloo Wala Naan",
+    "slug": "aloo-wala-naan",
+    "description": null,
+    "sortOrder": 6,
+    "isActive": true,
+    "isPaused": false,
+    "createdAt": "2026-11-07T11:11:30.123Z"
+   },
+   {
+    "id": "3cab8761-356a-41aa-907e-811f78ef1e8f",
+    "name": "Besaan Wala Naan",
+    "slug": "besaan-wala-naan",
+    "description": null,
+    "sortOrder": 7,
+    "isActive": true,
+    "isPaused": false,
+    "createdAt": "2026-11-07T11:11:30.124Z"
+   },
+   {
+    "id": "5c669ac9-2172-414c-9b7b-0ddbc1c68b7c",
+    "name": "Tikka Boti & Kababs",
+    "slug": "tikka-boti",
+    "description": null,
+    "sortOrder": 8,
+    "isActive": true,
+    "isPaused": false,
+    "createdAt": "2026-11-07T11:11:30.125Z"
+   },
+   {
+    "id": "a61376e5-5656-487a-a18e-76450fcdb3a5",
+    "name": "Pratha",
+    "slug": "pratha",
+    "description": null,
+    "sortOrder": 9,
+    "isActive": true,
+    "isPaused": false,
+    "createdAt": "2026-11-07T11:11:30.126Z"
+   },
+   {
+    "id": "5bc32263-c27c-43c0-a713-7476ac4372f5",
+    "name": "Regular Items",
+    "slug": "regular-items",
+    "description": null,
+    "sortOrder": 10,
+    "isActive": true,
+    "isPaused": false,
+    "createdAt": "2026-11-07T11:11:30.126Z"
+   },
+   {
+    "id": "a9321434-af54-4556-a4b9-d079767b3377",
+    "name": "Sides & Sauces",
+    "slug": "sides-and-sauces",
+    "description": null,
+    "sortOrder": 11,
+    "isActive": true,
+    "isPaused": false,
+    "createdAt": "2026-11-07T11:11:30.127Z"
+   }
+  ]
+ },
+ "/api/admin/deals": {
+  "deals": [
+   {
+    "id": "181848d1-c0dd-4096-80a0-b9b04c71aadb",
+    "title": "Crazy Deal 1",
+    "description": "2x Tandoori Pizza Naan + 1x 500ml Chilled Cola Next. Ultimate feast for two!",
+    "price": 1050,
+    "originalPrice": null,
+    "imageUrl": "/deal1.png",
+    "items": [
+     "2x Tandoori Pizza Naan",
+     "1x 500ml Chilled Cola Next"
+    ],
+    "badge": "Most Popular",
+    "startsAt": null,
+    "endsAt": null,
+    "isFeatured": false,
+    "isActive": true,
+    "deletedAt": null,
+    "createdAt": "2026-11-07T11:11:30.158Z",
+    "updatedAt": "2026-11-07T11:11:30.158Z",
+    "parts": []
+   },
+   {
+    "id": "026b737f-5fcf-45ec-83f8-51d9ca6bed5a",
+    "title": "Crazy Deal 2",
+    "description": "5x Choice of Chicken or Beef Naan + 1x 500ml Chilled Cola Next. Family favorite!",
+    "price": 1400,
+    "originalPrice": null,
+    "imageUrl": "/deal2.png",
+    "items": [
+     "5x Chicken / Beef Qeema Naan",
+     "1x 500ml Chilled Cola Next"
+    ],
+    "badge": "Save 20%",
+    "startsAt": null,
+    "endsAt": null,
+    "isFeatured": false,
+    "isActive": true,
+    "deletedAt": null,
+    "createdAt": "2026-11-07T11:11:30.160Z",
+    "updatedAt": "2026-11-07T11:11:30.160Z",
+    "parts": []
+   },
+   {
+    "id": "feb862b3-652d-4127-b781-23cf33283800",
+    "title": "Crazy Deal 3",
+    "description": "5x Spiced Aloo Naan + 1x Fresh Zeera Raita + 1x 500ml Chilled Cola Next.",
+    "price": 950,
+    "originalPrice": null,
+    "imageUrl": "/deal3.png",
+    "items": [
+     "5x Aloo Wala Naan",
+     "1x Fresh Zeera Raita",
+     "1x 500ml Chilled Cola Next"
+    ],
+    "badge": "Value Combo",
+    "startsAt": null,
+    "endsAt": null,
+    "isFeatured": false,
+    "isActive": true,
+    "deletedAt": null,
+    "createdAt": "2026-11-07T11:11:30.161Z",
+    "updatedAt": "2026-11-07T11:11:30.161Z",
+    "parts": []
+   }
+  ]
+ },
+ "/api/admin/menu-pdf": {
+  "source": "auto",
+  "activeId": null,
+  "activeFileMissing": false,
+  "files": [],
+  "maxBytes": 10485760,
+  "storage": "disk",
+  "directUploadAbove": null,
+  "auto": {
+   "categories": 10,
+   "items": 34,
+   "deals": 3
+  }
+ },
+ "/api/admin/closing": {
+  "report": {
+   "day": "2026-11-26",
+   "received": 28,
+   "completed": 9,
+   "cancelled": 12,
+   "pickup": 13,
+   "delivery": 15,
+   "cod_orders": 8,
+   "bank_verified": 5550,
+   "jazzcash_verified": 0,
+   "easypaisa_verified": 0,
+   "cod_collected": 5360,
+   "pending_payments": 0,
+   "outstanding_cod": 4290,
+   "discounts": 190,
+   "gross": 15200,
+   "collected": 10910,
+   "bestSellers": [
+    {
+     "title": "Nutella Naan",
+     "qty": 23,
+     "revenue": 11500
+    },
+    {
+     "title": "Tandoori Pizza Naan",
+     "qty": 4,
+     "revenue": 2000
+    },
+    {
+     "title": "E2E Combo",
+     "qty": 1,
+     "revenue": 990
+    }
+   ],
+   "closed": {
+    "closedAt": "2026-11-25T23:13:42.506Z",
+    "note": null
+   }
+  }
+ },
+ "/api/admin/analytics": {
+  "mostOrdered": [
+   {
+    "title": "Nutella Naan",
+    "category": "Special Items",
+    "qty": 290,
+    "revenue": 145000
+   },
+   {
+    "title": "Tandoori Pizza Naan",
+    "category": "Special Items",
+    "qty": 44,
+    "revenue": 22000
+   },
+   {
+    "title": "E2E Combo",
+    "category": "Other",
+    "qty": 5,
+    "revenue": 4950
+   },
+   {
+    "title": "Tandoori Shawarma Naan",
+    "category": "Special Items",
+    "qty": 1,
+    "revenue": 400
+   },
+   {
+    "title": "Crazy Deal 1",
+    "category": "Other",
+    "qty": 1,
+    "revenue": 1050
+   }
+  ],
+  "leastOrdered": [
+   {
+    "title": "Crazy Deal 1",
+    "category": "Other",
+    "qty": 1,
+    "revenue": 1050
+   },
+   {
+    "title": "Tandoori Shawarma Naan",
+    "category": "Special Items",
+    "qty": 1,
+    "revenue": 400
+   },
+   {
+    "title": "E2E Combo",
+    "category": "Other",
+    "qty": 5,
+    "revenue": 4950
+   },
+   {
+    "title": "Tandoori Pizza Naan",
+    "category": "Special Items",
+    "qty": 44,
+    "revenue": 22000
+   },
+   {
+    "title": "Nutella Naan",
+    "category": "Special Items",
+    "qty": 290,
+    "revenue": 145000
+   }
+  ],
+  "revenueByProduct": [
+   {
+    "title": "Nutella Naan",
+    "category": "Special Items",
+    "qty": 290,
+    "revenue": 145000
+   },
+   {
+    "title": "Tandoori Pizza Naan",
+    "category": "Special Items",
+    "qty": 44,
+    "revenue": 22000
+   },
+   {
+    "title": "E2E Combo",
+    "category": "Other",
+    "qty": 5,
+    "revenue": 4950
+   },
+   {
+    "title": "Crazy Deal 1",
+    "category": "Other",
+    "qty": 1,
+    "revenue": 1050
+   },
+   {
+    "title": "Tandoori Shawarma Naan",
+    "category": "Special Items",
+    "qty": 1,
+    "revenue": 400
+   }
+  ],
+  "categories": [
+   {
+    "category": "Special Items",
+    "qty": 335,
+    "revenue": 167400
+   },
+   {
+    "category": "Other",
+    "qty": 6,
+    "revenue": 6000
+   }
+  ],
+  "comparison": {
+   "current": {
+    "qty": 341,
+    "revenue": 173400
+   },
+   "previous": {
+    "qty": 0,
+    "revenue": 0
+   },
+   "perProduct": [
+    {
+     "title": "Nutella Naan",
+     "qty": 290,
+     "previousQty": 0
+    },
+    {
+     "title": "Tandoori Pizza Naan",
+     "qty": 44,
+     "previousQty": 0
+    },
+    {
+     "title": "E2E Combo",
+     "qty": 5,
+     "previousQty": 0
+    },
+    {
+     "title": "Tandoori Shawarma Naan",
+     "qty": 1,
+     "previousQty": 0
+    },
+    {
+     "title": "Crazy Deal 1",
+     "qty": 1,
+     "previousQty": 0
+    }
+   ]
+  }
+ },
+ "/api/admin/customers": {
+  "customers": [
+   {
+    "id": "6bb53060-fe9f-46c9-a054-25323ffaa0cd",
+    "full_name": "Rider Tester",
+    "email": "rt1794739536807@example.com",
+    "phone": "03001234567",
+    "loyalty_points": 0,
+    "created_at": "2026-11-15 15:45:39.377202+05",
+    "completed": 7,
+    "total_orders": 13,
+    "spent": 6410,
+    "repeat": true
+   },
+   {
+    "id": "05f7e2ca-dd04-4034-8ba1-3fbc5ae94d40",
+    "full_name": "Ayesha Khan",
+    "email": "demo.customer@example.com",
+    "phone": "03001234567",
+    "loyalty_points": 0,
+    "created_at": "2026-11-15 15:58:59.791506+05",
+    "completed": 3,
+    "total_orders": 9,
+    "spent": 4800,
+    "repeat": true
+   },
+   {
+    "id": "c5d7e995-2824-4ca7-a921-92477ef5fb92",
+    "full_name": "Rider Tester",
+    "email": "rt1795648469970@example.com",
+    "phone": "03001234567",
+    "loyalty_points": 0,
+    "created_at": "2026-11-26 04:14:37.212082+05",
+    "completed": 5,
+    "total_orders": 12,
+    "spent": 4210,
+    "repeat": true
+   },
+   {
+    "id": "ae3e22a2-b5c9-4e6b-a8e7-c9cc29643415",
+    "full_name": "Rider Tester",
+    "email": "rt1795627849565@example.com",
+    "phone": "03001234567",
+    "loyalty_points": 0,
+    "created_at": "2026-11-25 22:30:56.20885+05",
+    "completed": 5,
+    "total_orders": 12,
+    "spent": 4210,
+    "repeat": true
+   },
+   {
+    "id": "5d73ce2c-4c87-4878-a247-202546006259",
+    "full_name": "Rider Tester",
+    "email": "rt1795627375451@example.com",
+    "phone": "03001234567",
+    "loyalty_points": 0,
+    "created_at": "2026-11-25 22:23:05.602398+05",
+    "completed": 5,
+    "total_orders": 12,
+    "spent": 4210,
+    "repeat": true
+   },
+   {
+    "id": "49a0cd0c-8f9f-4fbf-8ba3-dfe23a96557b",
+    "full_name": "Rider Tester",
+    "email": "rt1795455907241@example.com",
+    "phone": "03001234567",
+    "loyalty_points": 0,
+    "created_at": "2026-11-23 22:45:07.911729+05",
+    "completed": 5,
+    "total_orders": 12,
+    "spent": 4210,
+    "repeat": true
+   }
+  ]
+ },
+ "/api/admin/coupons": {
+  "coupons": [
+   {
+    "id": "6114d932-a56b-4786-b125-d90a68366abf",
+    "code": "TMWWQOLDD",
+    "kind": "percent",
+    "value": 10,
+    "minOrder": 0,
+    "maxUses": 1,
+    "usedCount": 1,
+    "startsAt": null,
+    "endsAt": null,
+    "isActive": false,
+    "createdAt": "2026-11-25T23:13:03.434Z"
+   },
+   {
+    "id": "e1fc0f03-8e7e-4b11-a193-34066aecfe63",
+    "code": "TMWWQJLYZ",
+    "kind": "percent",
+    "value": 10,
+    "minOrder": 0,
+    "maxUses": 1,
+    "usedCount": 0,
+    "startsAt": null,
+    "endsAt": null,
+    "isActive": false,
+    "createdAt": "2026-11-25T23:09:09.971Z"
+   },
+   {
+    "id": "caef5e66-b2dd-4852-87a8-7a6d2a4b375c",
+    "code": "TMWWEE27F",
+    "kind": "percent",
+    "value": 10,
+    "minOrder": 0,
+    "maxUses": 1,
+    "usedCount": 1,
+    "startsAt": null,
+    "endsAt": null,
+    "isActive": false,
+    "createdAt": "2026-11-25T17:28:55.570Z"
+   },
+   {
+    "id": "1d604d79-71a7-4b11-87e4-37ccc5fe04f3",
+    "code": "TMWWE3KJK",
+    "kind": "percent",
+    "value": 10,
+    "minOrder": 0,
+    "maxUses": 1,
+    "usedCount": 1,
+    "startsAt": null,
+    "endsAt": null,
+    "isActive": false,
+    "createdAt": "2026-11-25T17:20:48.692Z"
+   },
+   {
+    "id": "007d759b-f841-4198-8453-c180efc1d6c7",
+    "code": "TMWTK2HKY",
+    "kind": "percent",
+    "value": 10,
+    "minOrder": 0,
+    "maxUses": 1,
+    "usedCount": 1,
+    "startsAt": null,
+    "endsAt": null,
+    "isActive": false,
+    "createdAt": "2026-11-23T17:44:33.166Z"
+   }
+  ]
+ },
+ "/api/admin/storage": {
+  "usage": {
+   "checkedAt": "2026-11-25T23:19:08.013Z",
+   "warnPercent": 80,
+   "alerts": true,
+   "level": 0,
+   "database": {
+    "bytes": 12506815,
+    "limitMb": 500,
+    "percent": 2.4,
+    "level": 0
+   },
+   "files": {
+    "source": "disk",
+    "totalBytes": 513197,
+    "partial": false,
+    "folders": [
+     {
+      "key": "proofs",
+      "label": "Payment screenshots",
+      "count": 0,
+      "bytes": 0
+     },
+     {
+      "key": "products",
+      "label": "Product & deal pictures",
+      "count": 0,
+      "bytes": 0
+     },
+     {
+      "key": "backups",
+      "label": "Backups",
+      "count": 2,
+      "bytes": 513197
+     }
+    ],
+    "limitMb": 1024,
+    "percent": 0,
+    "level": 0
+   }
+  }
+ },
+ "/api/admin/storage/proofs": {
+  "removable": 2,
+  "waitingForReview": 1
+ },
+ "/api/admin/backups": {
+  "backups": [
+   {
+    "id": "18da7d35-7f2a-434b-8a06-55a0cd0b4c80",
+    "filename": "hbt-backup-2026-11-25T23-14-22-486Z.json.gz",
+    "sizeBytes": 256673,
+    "status": "success",
+    "error": null,
+    "trigger": "scheduled",
+    "createdAt": "2026-11-25T23:14:22.501Z",
+    "available": true
+   },
+   {
+    "id": "457cff01-2649-4933-b2bc-32a271db2bec",
+    "filename": "hbt-backup-2026-11-25T23-14-07-457Z.json.gz",
+    "sizeBytes": 256524,
+    "status": "success",
+    "error": null,
+    "trigger": "manual",
+    "createdAt": "2026-11-25T23:14:07.469Z",
+    "available": true
+   },
+   {
+    "id": "33c32a50-e8ee-45ed-a6fa-009ab71ffd20",
+    "filename": "hbt-backup-2026-11-25T17-30-38-852Z.json.gz",
+    "sizeBytes": 234296,
+    "status": "success",
+    "error": null,
+    "trigger": "scheduled",
+    "createdAt": "2026-11-25T17:30:38.865Z",
+    "available": false
+   },
+   {
+    "id": "4ac39d97-c221-4ed1-a96d-16e7875d43c5",
+    "filename": "hbt-backup-2026-11-25T17-30-27-423Z.json.gz",
+    "sizeBytes": 234167,
+    "status": "success",
+    "error": null,
+    "trigger": "manual",
+    "createdAt": "2026-11-25T17:30:27.441Z",
+    "available": false
+   },
+   {
+    "id": "4af2d9a0-6d58-4c8d-a456-0ff5bc1c8f96",
+    "filename": "hbt-backup-2026-11-25T17-22-36-544Z.json.gz",
+    "sizeBytes": 221696,
+    "status": "success",
+    "error": null,
+    "trigger": "manual",
+    "createdAt": "2026-11-25T17:22:36.554Z",
+    "available": false
+   }
+  ]
+ },
+ "/api/admin/audit": {
+  "total": 1755,
+  "pages": 36,
+  "logs": [
+   {
+    "id": "496d7bef-22a5-40ec-9353-baba66aef3b8",
+    "actorId": "ffda0b65-9b5f-4664-8a5e-bc5d6ba0a68a",
+    "actorEmail": "owner@example.com",
+    "action": "staff.login",
+    "entity": "profile",
+    "entityId": "ffda0b65-9b5f-4664-8a5e-bc5d6ba0a68a",
+    "before": null,
+    "after": null,
+    "createdAt": "2026-11-25T23:18:05.556Z"
+   },
+   {
+    "id": "7775787a-6221-4508-bd3e-02940b098e1d",
+    "actorId": "ffda0b65-9b5f-4664-8a5e-bc5d6ba0a68a",
+    "actorEmail": "owner@example.com",
+    "action": "staff.remove",
+    "entity": "profile",
+    "entityId": "64b8d1b1-af6c-4740-9015-34f188fe6a3a",
+    "before": {
+     "role": "rider",
+     "email": "rtrider1795648469970@example.com"
+    },
+    "after": {
+     "role": "customer"
+    },
+    "createdAt": "2026-11-25T23:17:28.080Z"
+   },
+   {
+    "id": "9153c42d-4b92-4733-819b-002419e4b49b",
+    "actorId": "ffda0b65-9b5f-4664-8a5e-bc5d6ba0a68a",
+    "actorEmail": "owner@example.com",
+    "action": "order.status",
+    "entity": "order",
+    "entityId": "HBT-261126-030",
+    "before": {
+     "status": "Placed"
+    },
+    "after": {
+     "status": "Cancelled"
+    },
+    "createdAt": "2026-11-25T23:17:20.010Z"
+   },
+   {
+    "id": "8edbf453-cf25-4152-8f9c-eca34f536881",
+    "actorId": "f58d1cb4-077c-45ab-8d2d-0e2809a78b90",
+    "actorEmail": "rtadmin1795648469970@example.com",
+    "action": "order.delete",
+    "entity": "order",
+    "entityId": "HBT-261126-029",
+    "before": {
+     "type": "delivery",
+     "total": 1100,
+     "status": "Completed",
+     "placedAt": "2026-11-25T23:16:58.094Z"
+    },
+    "after": null,
+    "createdAt": "2026-11-25T23:17:16.776Z"
+   },
+   {
+    "id": "6914790c-650c-4e63-9a05-db711be54926",
+    "actorId": "f58d1cb4-077c-45ab-8d2d-0e2809a78b90",
+    "actorEmail": "rtadmin1795648469970@example.com",
+    "action": "order.delete",
+    "entity": "order",
+    "entityId": "HBT-261126-031",
+    "before": {
+     "type": "pickup",
+     "total": 500,
+     "status": "Cancelled",
+     "placedAt": "2026-11-25T23:17:12.765Z"
+    },
+    "after": null,
+    "createdAt": "2026-11-25T23:17:16.776Z"
+   },
+   {
+    "id": "898707cc-80bd-4353-acb6-e7b8623620b9",
+    "actorId": "f58d1cb4-077c-45ab-8d2d-0e2809a78b90",
+    "actorEmail": "rtadmin1795648469970@example.com",
+    "action": "order.delete",
+    "entity": "order",
+    "entityId": "HBT-261126-024",
+    "before": {
+     "type": "delivery",
+     "total": 1100,
+     "status": "Completed",
+     "placedAt": "2026-11-25T23:16:53.461Z"
+    },
+    "after": null,
+    "createdAt": "2026-11-25T23:17:16.776Z"
+   },
+   {
+    "id": "5e16c78a-c6c7-4011-9e65-de527ccbe318",
+    "actorId": "f58d1cb4-077c-45ab-8d2d-0e2809a78b90",
+    "actorEmail": "rtadmin1795648469970@example.com",
+    "action": "order.delete",
+    "entity": "order",
+    "entityId": "HBT-261126-023",
+    "before": {
+     "type": "delivery",
+     "total": 1100,
+     "status": "Cancelled",
+     "placedAt": "2026-11-25T23:16:52.829Z"
+    },
+    "after": null,
+    "createdAt": "2026-11-25T23:17:16.776Z"
+   },
+   {
+    "id": "0cc09ccc-1018-4d7c-adf0-695d462686f5",
+    "actorId": "f58d1cb4-077c-45ab-8d2d-0e2809a78b90",
+    "actorEmail": "rtadmin1795648469970@example.com",
+    "action": "order.status",
+    "entity": "order",
+    "entityId": "HBT-261126-029",
+    "before": {
+     "status": "Confirmed"
+    },
+    "after": {
+     "status": "Completed"
+    },
+    "createdAt": "2026-11-25T23:17:04.733Z"
+   }
+  ]
+ },
+ "/api/admin/staff": {
+  "staff": [
+   {
+    "id": "ffda0b65-9b5f-4664-8a5e-bc5d6ba0a68a",
+    "email": "owner@example.com",
+    "fullName": "Owner",
+    "role": "owner",
+    "isActive": true,
+    "lastLoginAt": "2026-11-25T23:18:05.537Z",
+    "createdAt": "2026-11-07T11:11:30.230Z"
+   },
+   {
+    "id": "70934a8a-00f8-4e64-8351-d51c8fabade3",
+    "email": "kitchen1794050784983@example.com",
+    "fullName": "Kitchen",
+    "role": "kitchen",
+    "isActive": false,
+    "lastLoginAt": "2026-11-07T11:26:25.182Z",
+    "createdAt": "2026-11-07T11:26:25.090Z"
+   },
+   {
+    "id": "09ae40da-0b20-4cb2-89e4-12c84bbb1b14",
+    "email": "kitchen1794227061668@example.com",
+    "fullName": "Kitchen",
+    "role": "kitchen",
+    "isActive": false,
+    "lastLoginAt": "2026-11-09T12:24:22.471Z",
+    "createdAt": "2026-11-09T12:24:21.670Z"
+   },
+   {
+    "id": "58d17fe3-c742-4e55-a3f1-57066f936f50",
+    "email": "kitchen1794344048853@example.com",
+    "fullName": "Kitchen",
+    "role": "kitchen",
+    "isActive": true,
+    "lastLoginAt": "2026-11-10T20:54:09.145Z",
+    "createdAt": "2026-11-10T20:54:08.855Z"
+   },
+   {
+    "id": "bc1d4598-81a0-4beb-b9e0-2b1aced2111c",
+    "email": "kitchen1794344084304@example.com",
+    "fullName": "Kitchen",
+    "role": "kitchen",
+    "isActive": false,
+    "lastLoginAt": "2026-11-10T20:54:44.554Z",
+    "createdAt": "2026-11-10T20:54:44.305Z"
+   },
+   {
+    "id": "fb8482c1-3e83-41d7-a664-b2bd12d4e40e",
+    "email": "ali.cashier@example.com",
+    "fullName": "Ali",
+    "role": "admin",
+    "isActive": true,
+    "lastLoginAt": null,
+    "createdAt": "2026-11-10T20:56:21.218Z"
+   }
+  ],
+  "meId": "ffda0b65-9b5f-4664-8a5e-bc5d6ba0a68a"
+ },
+ "/api/admin/settings": {
+  "settings": {
+   "shop": {
+    "name": "Haq Bahu Tandoor",
+    "tagline": "Fresh • Authentic",
+    "address": "Plot 16, N Block, Zahoor Market, Model Town Extension, Lahore, Pakistan",
+    "lat": 31.4766319,
+    "lng": 74.3147178,
+    "maps_url": "https://maps.app.goo.gl/m9GaLfGHuJpuW4VQ7",
+    "phone": "03094130285",
+    "whatsapp": "923094130285",
+    "email": "",
+    "hours": "11:00 AM - 12:00 AM",
+    "open_time": "00:00",
+    "close_time": "00:00",
+    "social": {
+     "facebook": "",
+     "instagram": ""
+    },
+    "alt_name": "Haq Bahu Naan Shop"
+   },
+   "delivery": {
+    "enabled": true,
+    "radius_m": 1000,
+    "fee": 100,
+    "free_over": 0,
+    "min_order": 0,
+    "hours_enabled": false,
+    "start_time": "11:00",
+    "end_time": "23:00"
+   },
+   "pickup": {
+    "enabled": true
+   },
+   "ordering": {
+    "open": true,
+    "notice": "",
+    "reopen_at": null
+   },
+   "payment": {
+    "bank": {
+     "iban": "",
+     "enabled": true,
+     "bank_name": "TEST BANK",
+     "account_title": "TEST",
+     "account_number": "000"
+    },
+    "jazzcash": {
+     "title": "",
+     "number": "",
+     "enabled": false
+    },
+    "easypaisa": {
+     "title": "",
+     "number": "",
+     "enabled": false
+    },
+    "instructions": ""
+   },
+   "loyalty": {
+    "enabled": false,
+    "points_per_100": 0
+   },
+   "backup": {
+    "enabled": true,
+    "every_hours": 24,
+    "keep": 14
+   },
+   "storage": {
+    "db_limit_mb": 500,
+    "files_limit_mb": 1024,
+    "warn_percent": 80,
+    "alerts": true
+   },
+   "storage_alert": {
+    "level": 0,
+    "sent_at": null
+   }
+  }
+ },
+ "/api/admin/alerts": {
+  "now": 1795648777782,
+  "count": 7,
+  "orders": [
+   {
+    "id": "62401463-001d-48fe-80c5-08b4f4437e6a",
+    "orderNumber": "HBT-261125-010",
+    "status": "Placed",
+    "orderType": "delivery",
+    "customerName": "Phase2 Tester",
+    "createdAt": "2026-11-25T17:20:55.393Z",
+    "itemCount": 2,
+    "totalAmount": 1000,
+    "paymentMethod": "cod",
+    "canAccept": true
+   },
+   {
+    "id": "79998265-a9d7-4c03-9180-d244b18db34b",
+    "orderNumber": "HBT-261125-011",
+    "status": "Placed",
+    "orderType": "delivery",
+    "customerName": "Phase2 Tester",
+    "createdAt": "2026-11-25T17:21:06.307Z",
+    "itemCount": 1,
+    "totalAmount": 1090,
+    "paymentMethod": "cod",
+    "canAccept": true
+   },
+   {
+    "id": "9588ea13-8ff4-4f11-9751-c4930eaa4983",
+    "orderNumber": "HBT-261125-028",
+    "status": "Payment Verification",
+    "orderType": "pickup",
+    "customerName": "Upload Tester",
+    "createdAt": "2026-11-25T17:26:43.634Z",
+    "itemCount": 1,
+    "totalAmount": 500,
+    "paymentMethod": "bank_transfer",
+    "canAccept": false
+   },
+   {
+    "id": "0262a811-c58d-40e8-a737-f08cc4256975",
+    "orderNumber": "HBT-261125-030",
+    "status": "Placed",
+    "orderType": "delivery",
+    "customerName": "Phase2 Tester",
+    "createdAt": "2026-11-25T17:29:10.903Z",
+    "itemCount": 2,
+    "totalAmount": 1000,
+    "paymentMethod": "cod",
+    "canAccept": true
+   },
+   {
+    "id": "2a596501-3492-4b60-a56b-58e5b173cc51",
+    "orderNumber": "HBT-261125-031",
+    "status": "Placed",
+    "orderType": "delivery",
+    "customerName": "Phase2 Tester",
+    "createdAt": "2026-11-25T17:29:22.694Z",
+    "itemCount": 1,
+    "totalAmount": 1090,
+    "paymentMethod": "cod",
+    "canAccept": true
+   },
+   {
+    "id": "62814174-7e30-4d0a-9e14-b911bc411bc9",
+    "orderNumber": "HBT-261126-014",
+    "status": "Placed",
+    "orderType": "delivery",
+    "customerName": "Phase2 Tester",
+    "createdAt": "2026-11-25T23:13:07.617Z",
+    "itemCount": 2,
+    "totalAmount": 1000,
+    "paymentMethod": "cod",
+    "canAccept": true
+   },
+   {
+    "id": "008bd597-5abf-4488-b1ad-14d9c66e85fb",
+    "orderNumber": "HBT-261126-015",
+    "status": "Placed",
+    "orderType": "delivery",
+    "customerName": "Phase2 Tester",
+    "createdAt": "2026-11-25T23:13:14.990Z",
+    "itemCount": 1,
+    "totalAmount": 1090,
+    "paymentMethod": "cod",
+    "canAccept": true
+   }
+  ]
+ }
+}

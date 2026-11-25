@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { and, asc, eq, or } from 'drizzle-orm';
 import { db, schema } from '@/db';
 import { getCustomer, getStaff } from '@/lib/server/auth';
+import { paymentState } from '@/lib/server/orders';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,14 +23,21 @@ export async function GET(request, { params }) {
   const allowed = staff || (customer && order.userId === customer.id) || (token && order.trackingToken === token);
   if (!allowed) return NextResponse.json({ error: 'Order not found.' }, { status: 404 }); // don't reveal existence
 
-  const items = await db.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, order.id));
-  const history = await db.select().from(schema.orderStatusHistory).where(eq(schema.orderStatusHistory.orderId, order.id)).orderBy(asc(schema.orderStatusHistory.createdAt));
   const { trackingToken, idempotencyKey, ...safe } = order;
   // The customer's own rating (and staff) can see it; a tracking-link holder cannot.
-  const [fb] = staff || (customer && order.userId === customer.id) ? await db.select().from(schema.orderFeedback).where(eq(schema.orderFeedback.orderId, order.id)) : [];
+  const seesOwn = staff || (customer && order.userId === customer.id);
+  const [items, history, [fb], payment] = await Promise.all([
+    db.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, order.id)),
+    db.select().from(schema.orderStatusHistory).where(eq(schema.orderStatusHistory.orderId, order.id)).orderBy(asc(schema.orderStatusHistory.createdAt)),
+    seesOwn ? db.select().from(schema.orderFeedback).where(eq(schema.orderFeedback.orderId, order.id)) : [],
+    paymentState(order),
+  ]);
   return NextResponse.json({
     order: {
       ...safe,
+      // The shop asked about the payment and has had no answer yet; and whether the form is open to this person.
+      paymentReminderAt: payment.reminderAt,
+      canSubmitPayment: payment.canSubmit && !!customer && order.userId === customer.id,
       feedback: fb ? { rating: fb.rating, comment: fb.comment } : null,
       subtotal: Number(order.subtotal),
       discountAmount: Number(order.discountAmount),

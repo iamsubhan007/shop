@@ -11,7 +11,7 @@ const num = z.coerce.number().min(0).max(1e7);
 
 const validators = {
   shop: z.object({
-    name: str(80), alt_name: str(80).optional(), address: str(300), lat: z.coerce.number().min(-90).max(90), lng: z.coerce.number().min(-180).max(180),
+    name: str(80), alt_name: str(80).optional(), tagline: z.string().trim().max(80).optional(), address: str(300), lat: z.coerce.number().min(-90).max(90), lng: z.coerce.number().min(-180).max(180),
     maps_url: str(300), phone: str(30), whatsapp: z.string().trim().regex(/^\d{10,15}$/, 'WhatsApp number must be digits with country code, e.g. 923001234567'),
     email: str(120), hours: str(80),
     open_time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Opening time must be HH:MM').default('08:00'),

@@ -3,6 +3,7 @@ import React from 'react'
 import { Phone, MapPin, Mail } from 'lucide-react';
 import { FaSquareFacebook, FaSquareInstagram } from "react-icons/fa6";
 import Link from 'next/link';
+import MenuPdfButton from '@/components/MenuPdfButton';
 
 function Footer() {
   return (
@@ -74,6 +75,7 @@ function Footer() {
           <div className="space-y-2.5">
             <Link href="/" className="block text-sm hover:text-zinc-200 transition-colors">Home</Link>
             <Link href="/Menu" className="block text-sm hover:text-zinc-200 transition-colors">Full Menu</Link>
+            <div><MenuPdfButton className="inline-flex items-center gap-1.5 text-sm hover:text-zinc-200 transition-colors" /></div>
             <Link href="/Chat" className="block text-sm hover:text-zinc-200 transition-colors">Chat Support</Link>
             <a
               href="https://www.foodpanda.pk/restaurant/w6kj/haq-bahu-naan-shop"

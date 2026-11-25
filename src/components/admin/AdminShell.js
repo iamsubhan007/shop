@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import NewOrderAlert from '@/components/admin/NewOrderAlert';
 import PushToggle from '@/components/admin/PushToggle';
 import StorageBanner from '@/components/admin/StorageBanner';
-import { BarChart3, Bike, ChefHat, DatabaseBackup, HardDrive, LayoutDashboard, LogOut, Menu as MenuIcon, Receipt, Settings, Tag, UserCog, UtensilsCrossed, Users, X } from 'lucide-react';
+import { BarChart3, Bike, ChefHat, DatabaseBackup, FileText, HardDrive, LayoutDashboard, LogOut, Menu as MenuIcon, Receipt, Settings, Tag, UserCog, UtensilsCrossed, Users, X } from 'lucide-react';
 
 const NAV = [
   { href: '/admin', label: 'Dashboard', ur: 'ڈیش بورڈ', icon: LayoutDashboard, roles: ['owner', 'admin'] },
@@ -15,6 +15,7 @@ const NAV = [
   { href: '/admin/rider', label: 'Deliveries', ur: 'ڈیلیوری', icon: Bike, roles: ['rider'] },
   { href: '/admin/menu', label: 'Menu & Stock', ur: 'مینو', icon: UtensilsCrossed, roles: ['owner', 'admin'] },
   { href: '/admin/deals', label: 'Deals', ur: 'ڈیلز', icon: Tag, roles: ['owner', 'admin'] },
+  { href: '/admin/menu-pdf', label: 'Menu PDF', ur: 'مینو پی ڈی ایف', icon: FileText, roles: ['owner', 'admin'] },
   { href: '/admin/reports', label: 'Reports', ur: 'رپورٹس', icon: BarChart3, roles: ['owner', 'admin'] },
   { href: '/admin/customers', label: 'Customers & Coupons', ur: 'گاہک', icon: Users, roles: ['owner', 'admin'] },
   { href: '/admin/system', label: 'Backups & Activity', ur: 'بیک اپ', icon: DatabaseBackup, roles: ['owner'] },
@@ -43,7 +44,7 @@ export default function AdminShell({ user, children }) {
   const nav = (
     <nav className="flex flex-col gap-1 p-3" aria-label="Admin">
       {links.map(({ href, label, ur, icon: Icon }) => {
-        const active = href === '/admin' ? path === '/admin' : path.startsWith(href);
+        const active = href === '/admin' ? path === '/admin' : path === href || path.startsWith(href + '/');
         return (
           <Link key={href} href={href} onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold ${active ? 'bg-red-700 text-white' : 'text-zinc-300 hover:bg-zinc-800'}`}>
             <Icon size={18} /> <span>{label}</span> <span className="ml-auto text-[11px] opacity-60" lang="ur">{ur}</span>

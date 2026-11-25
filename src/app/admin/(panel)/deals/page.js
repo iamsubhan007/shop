@@ -4,9 +4,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Plus, Trash2, X } from 'lucide-react';
 import { api, rs } from '@/components/admin/api';
 import { prepareImage } from '@/lib/compressImage';
+import { fromShopInput, toShopInput } from '@/lib/shopTime';
 
 const field = 'w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm';
-const local = (d) => (d ? new Date(d).toISOString().slice(0, 16) : '');
 
 export default function DealsAdmin() {
   const [deals, setDeals] = useState(null);
@@ -31,7 +31,7 @@ export default function DealsAdmin() {
         {deals.map((d) => (
           <li key={d.id} className="bg-white rounded-2xl border p-3 flex flex-wrap items-center gap-3">
             <div className="flex-1 min-w-[200px]"><div className="font-bold text-sm">{d.title} {d.isFeatured && <span className="text-[10px] bg-amber-200 rounded px-1.5">FEATURED</span>}</div>
-              <div className="text-xs text-zinc-500">{rs(d.price)}{d.originalPrice && <s className="ml-1">{rs(d.originalPrice)}</s>} · {(d.items || []).join(', ') || 'no items listed'}{d.endsAt && ` · ends ${new Date(d.endsAt).toLocaleDateString('en-PK')}`}</div></div>
+              <div className="text-xs text-zinc-500">{rs(d.price)}{d.originalPrice && <s className="ml-1">{rs(d.originalPrice)}</s>} · {(d.items || []).join(', ') || 'no items listed'}{d.endsAt && ` · ends ${new Date(d.endsAt).toLocaleDateString('en-PK', { timeZone: 'Asia/Karachi' })}`}</div></div>
             <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={!!d.isActive} onChange={(e) => patch(d.id, { isActive: e.target.checked })} className="w-5 h-5 accent-emerald-600" /> Active</label>
             <button onClick={() => setEdit(d)} className="px-3 py-2 border rounded-lg text-xs font-semibold">Edit</button>
             <button onClick={() => del(d)} aria-label={`Delete ${d.title}`} className="p-2 text-red-600"><Trash2 size={16} /></button>
@@ -46,7 +46,7 @@ export default function DealsAdmin() {
 
 function DealForm({ deal, products, onClose, onSaved }) {
   const isNew = !deal.id;
-  const [f, setF] = useState({ title: deal.title || '', description: deal.description || '', price: deal.price ?? '', badge: deal.badge || '', imageUrl: deal.imageUrl || '', isFeatured: !!deal.isFeatured, isActive: deal.isActive ?? true, startsAt: local(deal.startsAt), endsAt: local(deal.endsAt) });
+  const [f, setF] = useState({ title: deal.title || '', description: deal.description || '', price: deal.price ?? '', badge: deal.badge || '', imageUrl: deal.imageUrl || '', isFeatured: !!deal.isFeatured, isActive: deal.isActive ?? true, startsAt: toShopInput(deal.startsAt), endsAt: toShopInput(deal.endsAt) });
   const [parts, setParts] = useState(deal.parts || []);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -66,7 +66,7 @@ function DealForm({ deal, products, onClose, onSaved }) {
   const save = async (e) => {
     e.preventDefault(); setBusy(true); setErr('');
     const body = { title: f.title, description: f.description || null, price: Number(f.price), badge: f.badge || null, imageUrl: f.imageUrl || null, isFeatured: f.isFeatured, isActive: f.isActive,
-      startsAt: f.startsAt ? new Date(f.startsAt).toISOString() : null, endsAt: f.endsAt ? new Date(f.endsAt).toISOString() : null, items: parts.filter((p) => p.productId) };
+      startsAt: fromShopInput(f.startsAt), endsAt: fromShopInput(f.endsAt), items: parts.filter((p) => p.productId) };
     try { await api(isNew ? '/api/admin/deals' : `/api/admin/deals/${deal.id}`, { method: isNew ? 'POST' : 'PATCH', body }); onSaved(); } catch (e2) { setErr(e2.message); setBusy(false); }
   };
 
@@ -91,8 +91,8 @@ function DealForm({ deal, products, onClose, onSaved }) {
         <div className="grid grid-cols-2 gap-3">
           <label className="block text-xs font-semibold">Deal price (Rs.)<input required type="number" min="1" value={f.price} onChange={(e) => set('price', e.target.value)} className={field} /></label>
           <label className="block text-xs font-semibold">Badge (optional)<input value={f.badge} onChange={(e) => set('badge', e.target.value)} className={field} maxLength={30} /></label>
-          <label className="block text-xs font-semibold">Starts<input type="datetime-local" value={f.startsAt} onChange={(e) => set('startsAt', e.target.value)} className={field} /></label>
-          <label className="block text-xs font-semibold">Ends<input type="datetime-local" value={f.endsAt} onChange={(e) => set('endsAt', e.target.value)} className={field} /></label>
+          <label className="block text-xs font-semibold">Starts (shop time)<input type="datetime-local" value={f.startsAt} onChange={(e) => set('startsAt', e.target.value)} className={field} /></label>
+          <label className="block text-xs font-semibold">Ends (shop time)<input type="datetime-local" value={f.endsAt} onChange={(e) => set('endsAt', e.target.value)} className={field} /></label>
         </div>
         <div className="text-xs font-semibold">Picture<div className="flex items-center gap-3 mt-1">{f.imageUrl && <img src={f.imageUrl} alt="" className="w-16 h-16 rounded-lg object-cover border" />}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} /></div></div>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.isFeatured} onChange={(e) => set('isFeatured', e.target.checked)} className="w-5 h-5" /> Featured</label>

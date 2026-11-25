@@ -133,6 +133,7 @@ export default function SettingsAdmin() {
         {(v, set) => (<>
           <div className="grid sm:grid-cols-2 gap-3">
             <Field label="Shop name"><input className={inp} value={v.name} onChange={(e) => set({ name: e.target.value })} /></Field>
+            <Field label="Tagline" hint="Printed under the name on the menu PDF."><input className={inp} maxLength={80} value={v.tagline ?? ''} onChange={(e) => set({ tagline: e.target.value })} /></Field>
             <Field label="Phone"><input className={inp} value={v.phone} onChange={(e) => set({ phone: e.target.value })} /></Field>
             <Field label="WhatsApp number" hint="Digits with country code, e.g. 923001234567"><input className={inp} value={v.whatsapp} onChange={(e) => set({ whatsapp: e.target.value })} /></Field>
             <Field label="Email"><input className={inp} value={v.email} onChange={(e) => set({ email: e.target.value })} /></Field>

@@ -2,12 +2,13 @@ import 'server-only';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '@/db';
 import { withinWindow } from '@/lib/hours';
+import { retryRead } from '@/lib/dbResilience';
 
 const { shopSettings } = schema;
 
 /** Safe defaults only used if a key is missing from the database (never for payment accounts). */
 export const SETTING_DEFAULTS = {
-  shop: { name: 'Haq Bahu Tandoor', address: '', lat: 31.4766319, lng: 74.3147178, maps_url: '', phone: '', whatsapp: '', email: '', hours: '8:00 AM - 11:00 PM', open_time: '08:00', close_time: '23:00', social: {} },
+  shop: { name: 'Haq Bahu Tandoor', tagline: 'Fresh • Authentic', address: '', lat: 31.4766319, lng: 74.3147178, maps_url: '', phone: '', whatsapp: '', email: '', hours: '8:00 AM - 11:00 PM', open_time: '08:00', close_time: '23:00', social: {} },
   // hours_enabled: off by default, so existing shops keep delivering whenever they are open. When on, delivery orders
   // are only accepted between start_time and end_time (shop-local time, may pass midnight).
   delivery: { enabled: true, radius_m: 1000, fee: 0, free_over: 0, min_order: 0, hours_enabled: false, start_time: '11:00', end_time: '23:00' },
@@ -28,7 +29,7 @@ export const SETTING_DEFAULTS = {
 };
 
 export async function getSettings() {
-  const rows = await db.select().from(shopSettings);
+  const rows = await retryRead(() => db.select().from(shopSettings));
   const out = {};
   for (const [k, v] of Object.entries(SETTING_DEFAULTS)) out[k] = v;
   for (const r of rows) out[r.key] = { ...(SETTING_DEFAULTS[r.key] || {}), ...r.value };
