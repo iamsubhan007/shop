@@ -19,8 +19,12 @@ const nextConfig = {
   outputFileTracingExcludes: {
     '/*': ['./mobile/**', './.git/**', './.localdb/**', './storage/**', './public/**', './docs/**', './scripts/**', './drizzle/**', './supabase/**'],
   },
+  // The printing library reads some of its own files by a computed path (browsers.json as it loads), which the
+  // packager cannot see. So the whole library goes with every route that loads it, or the route crashes on the host.
   outputFileTracingIncludes: {
-    '/api/menu/pdf': ['./node_modules/@sparticuz/chromium/bin/**'],
+    '/api/menu/pdf': ['./node_modules/playwright-core/**/*', './node_modules/@sparticuz/chromium/bin/**'],
+    '/api/admin/menu-pdf': ['./node_modules/playwright-core/**/*'],
+    '/api/admin/menu-pdf/**': ['./node_modules/playwright-core/**/*'],
     '/api/admin/menu-pdf/preview': ['./node_modules/@sparticuz/chromium/bin/**'],
   },
   // The old hand-made menu file's address now gives the current published menu, so old links never serve old prices.
