@@ -23,6 +23,7 @@ import dynamic from 'next/dynamic';
 // The product pop-up only appears after a tap, so its code is loaded then instead of with the page.
 const ProductModal = dynamic(() => import('@/components/menu/ProductModal'));
 import DealCard from '@/components/deals/DealCard';
+import { dealMatches } from '@/lib/dealSearch';
 import { useSite } from '@/context/SiteContext';
 import { useWishlist } from '@/context/WishlistContext';
 
@@ -45,6 +46,7 @@ export default function HomeClient({ seo = null }) {
 
   const genres = [
     'All',
+    'Deals',
     'Special',
     'Chicken',
     'Beef',
@@ -73,6 +75,16 @@ export default function HomeClient({ seo = null }) {
 
     return matchesSearch && matchesGenre;
   });
+
+  // The "Deals" category shows only the deals (the search box then searches them).
+  const dealsOnly = selectedGenre === 'Deals';
+  const shownDeals = dealsOnly ? deals.filter((d) => dealMatches(d, searchTerm)) : deals;
+
+  const choose = (genre) => {
+    setSelectedGenre(genre);
+    // The deals sit above the item grid, so bring them into view from wherever the page was.
+    if (genre === 'Deals') document.getElementById('deals-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -130,13 +142,15 @@ export default function HomeClient({ seo = null }) {
             return (
               <button
                 key={genre}
-                onClick={() => setSelectedGenre(genre)}
+                onClick={() => choose(genre)}
+                aria-pressed={selectedGenre === genre}
                 className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 flex items-center gap-1.5 ${
                   selectedGenre === genre
                     ? 'bg-red-700 text-white shadow-md'
                     : 'bg-zinc-800/90 text-zinc-300 hover:bg-zinc-700 hover:text-white'
                 }`}
               >
+                {genre === 'Deals' && <Sparkles size={12} />}
                 {isFav && <Heart size={12} className={wishlist.length ? 'fill-red-400 text-red-400' : ''} />}
                 {genre}
                 {isFav && wishlist.length > 0 && ` (${wishlist.length})`}
@@ -147,7 +161,7 @@ export default function HomeClient({ seo = null }) {
       </div>
 
       {/* Value Combo Deals Section (the Deals link in the navbar jumps here) */}
-      <div id="deals-section" className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 scroll-mt-28">
+      <div id="deals-section" className={`w-full max-w-7xl mx-auto px-4 sm:px-6 pt-8 scroll-mt-28 ${dealsOnly ? 'flex-1 pb-20' : ''}`}>
         <div className="flex items-end justify-between mb-4">
           <div>
             <div className="flex items-center gap-1.5 text-xs font-bold text-red-700 uppercase tracking-widest">
@@ -161,15 +175,29 @@ export default function HomeClient({ seo = null }) {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {deals.map((deal, i) => (
+          {shownDeals.map((deal, i) => (
             // The first deal picture is near the top of the page: load it with priority so it is not the slow part.
             <DealCard key={deal.id} deal={deal} priority={i === 0} onSelect={(d) => setSelectedProduct(d)} />
           ))}
         </div>
+        {dealsOnly && shownDeals.length === 0 && (
+          <div className="py-16 text-center">
+            <p className="text-base font-bold text-zinc-700">{searchTerm ? 'No deals match your search' : 'No deals right now'}</p>
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedGenre('All');
+              }}
+              className="mt-3 text-xs text-red-700 font-bold hover:underline"
+            >
+              Show all items
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Menu Items Grid Section */}
-      <div className="flex-1 bg-background">
+      <div className={`flex-1 bg-background ${dealsOnly ? 'hidden' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 pb-4 flex items-end justify-between">
           <div>
             <h2 className="text-xl sm:text-2xl font-extrabold text-zinc-900">

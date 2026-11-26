@@ -7,6 +7,8 @@ import { Search, UtensilsCrossed, Sparkles } from 'lucide-react';
 import Footer from '@/components/footer';
 import MenuPdfButton from '@/components/MenuPdfButton';
 import FoodCard from '@/components/menu/FoodCard';
+import DealCard from '@/components/deals/DealCard';
+import { dealMatches } from '@/lib/dealSearch';
 import dynamic from 'next/dynamic';
 
 // The product pop-up only appears after a tap, so its code is loaded then instead of with the page.
@@ -15,10 +17,11 @@ import { useSite } from '@/context/SiteContext';
 
 export default function MenuPage() {
   const [showChatMsg, setShowChatMsg] = useState(true);
-  const { products, loading: siteLoading, error: siteError } = useSite();
+  const { products, deals, loading: siteLoading, error: siteError } = useSite();
   const [selectedGenre, setSelectedGenre] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const shownDeals = deals.filter((d) => dealMatches(d, searchTerm));
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -91,6 +94,18 @@ export default function MenuPage() {
           >
             All Categories
           </button>
+          <a
+            href="#deals-section"
+            onClick={() => setSelectedGenre('Deals')}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+              selectedGenre === 'Deals'
+                ? 'bg-red-700 text-white shadow-xs'
+                : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
+            }`}
+          >
+            <Sparkles size={12} />
+            Deals
+          </a>
           {categorySections.map((sec) => (
             <a
               key={sec.genre}
@@ -110,6 +125,24 @@ export default function MenuPage() {
 
       {/* Categorized Menu Sections */}
       <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-8 space-y-10">
+        {(shownDeals.length > 0 || selectedGenre === 'Deals') && (
+          <section id="deals-section" className="scroll-mt-28 space-y-4">
+            <div className="flex items-center gap-2.5 border-b border-zinc-200 pb-2.5">
+              <span className="w-1.5 h-6 bg-red-700 rounded-full inline-block" />
+              <h2 className="text-xl font-bold text-zinc-900 tracking-tight">Crazy Deals &amp; Combos</h2>
+              <span className="text-xs text-zinc-400 font-medium">({shownDeals.length})</span>
+            </div>
+            {shownDeals.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {shownDeals.map((deal, i) => (
+                  <DealCard key={deal.id} deal={deal} priority={i === 0} onSelect={(d) => setSelectedProduct(d)} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-zinc-500">{searchTerm ? 'No deals match your search.' : 'No deals right now. Please check back soon.'}</p>
+            )}
+          </section>
+        )}
         {categorySections.map((sec) => {
           const itemsInSection = products.filter((item) => {
             const matchesGenre = item.genre?.toLowerCase() === sec.genre.toLowerCase();
